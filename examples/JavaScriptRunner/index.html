@@ -17,8 +17,8 @@ const browserConsole = {
 		}
 	}
 }
-const worker = new Dexterous.Worker(undefined,undefined,"/JavaScriptRunner/worker.js");
-worker.listen(3000,"127.0.0.1").then(() => {
+const worker = new Dexterous.Worker();
+worker.listen(3000,"127.0.0.1","/JavaScriptRunner/worker.js").then(() => {
 	let message = worker.createResponse();
 	message.writeHead(200,{"Content-Type":"application/javascript"});
 	message.end("return 'I am a told I am a Dexterous WebWorker<br>'",true).then((result) => {
@@ -29,7 +29,7 @@ worker.listen(3000,"127.0.0.1").then(() => {
 
 if(typeof(Dexterous.SharedWorker)==="function") {
 	const sharedworker = new Dexterous.SharedWorker()
-	sharedworker.listen(3000,"127.0.0.1").then(() => {
+	sharedworker.listen(3000,"127.0.0.1","/JavaScriptRunner/worker.js").then(() => {
 		const message = sharedworker.createResponse();
 		message.writeHead(200,{"Content-Type":"application/javascript"});
 		message.end("return 'I am told I am a Dexterous SharedWebWorker<br>'",true).then((result) => {

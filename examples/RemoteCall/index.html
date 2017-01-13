@@ -1,0 +1,46 @@
+<html>
+<head>
+<script type="text/javascript" src="/dexterous/dexterous.js"></script>
+</head>
+<body>
+<p>Make sure to start the example NodeJS server using 'npm run exampleServer'!</p>
+<div id="console"></div>
+
+<script type="text/javascript">
+
+
+const browserConsole = {
+	log() {
+		const el = document.getElementById("console");
+		for(let i=0;i<arguments.length;i++) {
+			el.innerHTML += (arguments[i] + " ");
+		}
+	}
+}
+const worker = new Dexterous.Worker();
+worker.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
+	let message = worker.createResponse();
+	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.end({key:"testFunction",arguments:[1]},true).then((result) => {
+		browserConsole.log(result,"<br>");
+	});
+	message = worker.createResponse();
+	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.end({key:"testProperty"},true).then((result) => {
+		browserConsole.log("value of testProperty is",result,"<br>");
+	});
+	message = worker.createResponse();
+	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.end({key:"testProperty", value:"newValue"},true).then((result) => {
+		browserConsole.log("testProperty changed","<br>");
+	});
+	message = worker.createResponse();
+	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.end({key:"testProperty"},true).then((result) => {
+		browserConsole.log("new value of testProperty is",result,"<br>");
+	});
+});
+
+</script>
+</body>
+</html>

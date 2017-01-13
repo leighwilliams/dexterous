@@ -1,83 +1,5 @@
 (function() {
 	const ONSERVER = (typeof(window)==="undefined" && typeof(require)==="function" && typeof(module)==="object" ? true : false);
-	const JSONParser = (request,response,next) => {
-		if(request.headers["Content-Type"]==="application/json" && typeof(request.body)==="string") {
-			try {
-				request.body = JSON.parse(request.body);
-			} catch(e) {
-				// ignore
-			}
-		}
-		return next;
-	}
-	const JavaScriptRunner = (scope,returnsError) => {
-		return (request,response,next) => {
-			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0 && typeof(request.body)==="string") {
-				try {
-					const result = new Function(request.body).call(scope);
-					if(request.headers.method==="GET") {
-						response.writeHead(200,{"Content-Type":"application/json"});
-						response.end(result);
-					} else {
-						response.writeHead(200);
-					}
-				} catch(e) {
-					const msg = "Expression: '"+ request.body + "' caused an error!";
-					console.log(msg+"\n",e);
-					if(returnsError) {
-						response.writeHead(500,{"Content-Type":"text/plain"});
-						response.end(msg);
-					}
-				}
-				return;
-			}
-			return next;
-		}
-	}
-	const RemoteCall = (scope,returnsError) => {
-		return (request,response,next) => {
-			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0 && request.body && typeof(request.body)==="object") {
-				let object = scope;
-				if(request.body.id) {
-					// object = 
-				}
-				const type = typeof(scope[request.body.property]);
-				if(type==="function") {
-					try {
-						const result = scope[request.body.property].apply(scope,request.body.arguments);
-						response.writeHead(200,{"Content-Type":"application/json"});
-						response.end(result);
-					} catch(e) {
-						const msg = "Expression: '"+ JSON.stringify(request.body) + "' caused an error!";
-						console.log(msg+"\n",e);
-						if(returnsError) {
-							response.writeHead(500,{"Content-Type":"text/plain"});
-							response.end(msg);
-						} else {
-							return next;
-						}
-					}
-					
-				} else if(typeof(request.body.value)!=="undefined") {
-					scope[request.body.property] = request.body.value;
-					response.writeHead(200);
-					response.end();
-				} else {
-					const result = scope[request.body.property];
-					response.writeHead(200,{"Content-Type":"application/json"});
-					response.end(result);
-				}
-				return;
-			}
-			return next;
-		}
-	}
-	const ConsoleLogger = function*(request,response,next) {
-		console.log("Request",request);
-		yield next;
-		console.log("Response",response);
-		return next;
-	}
 	class DexterousResponse {
 		constructor(client,request,socket) {
 			Object.defineProperty(this,"client",{configurable:true,writable:true,value:client});
@@ -245,7 +167,6 @@
 		}
 		listen(worker) {
 			const me = this;
-			me.use(Dexterous.JavaScriptRunner(me));
 			if(typeof(DedicatedWorkerGlobalScope)!=="undefined" && worker instanceof  DedicatedWorkerGlobalScope) {
 				worker.onmessage=function(message){
 					const response = me.createResponse(message.data,this);
@@ -318,14 +239,11 @@
 			});
 		}
 	}
-	Dexterous.JSONParser = JSONParser;
-	Dexterous.JavaScriptRunner = JavaScriptRunner;
-	Dexterous.ConsoleLogger = ConsoleLogger;
-	Dexterous.RemoteCall = RemoteCall;
 	Dexterous.Response = DexterousResponse;
 	Dexterous.Client = DexterousClient;
 	if(ONSERVER) {
-		Dexterous.Server = require("./server.js")({Dexterous});
+		const r = require;
+		Dexterous.Server = r("./server.js")({Dexterous});
 		module.exports = Dexterous;
 	} else {
 		if(typeof(Worker)!=="undefined") {

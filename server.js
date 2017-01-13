@@ -1,64 +1,6 @@
 (function() {
 	module.exports = function(imports) {
 		const Dexterous = imports.Dexterous;
-		Dexterous.URLContentType = function(request,response,next) {
-			if(request.url) {
-				const i = request.url.lastIndexOf(".");
-				if(i>0) {
-					const types = {
-							".js": "application/javascript"
-						},
-						ext = request.url.substring(i);
-					let type = types[ext];;
-					if(type) {
-						response.setHeader("Content-Type",type);
-					}
-				}
-			}
-			return next;
-		}
-		Dexterous.static = function(root) {
-			return function(request,response,next) {
-				const r = require,
-					url = r("url"),
-					path = r("path"),
-					fs = r("fs");
-				if(!request.url) {
-					return next;
-				}
-				const uri = url.parse(request.url).pathname,
-				filename = path.join(process.cwd()+(root && root.length>0 ? "/"+root : ""),uri);
-				try {
-					const data = fs.readFileSync(filename);
-					response.writeHead(200);
-					response.end(data);
-				} catch(e) {
-					return next;
-				}
-			}
-		}
-		Dexterous.virtual = function(alias,root) {
-			return function(request,response,next) {
-				const r = require,
-					url = r("url"),
-					path = r("path"),
-					fs = r("fs");
-				if(!request.url) {
-					return next;
-				}
-				const uri = url.parse(request.url).pathname;
-				if(uri.indexOf(alias)===0) {
-					const filename = path.join(process.cwd()+uri.replace(alias,root));
-					try {
-						const data = fs.readFileSync(filename);
-						response.writeHead(200);
-						response.end(data);
-					} catch(e) {
-						return next;
-					}
-				}
-			}
-		}
 		class DexterousServer extends Dexterous {
 			constructor(server,options) {
 				super(options);
