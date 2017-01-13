@@ -1,0 +1,27 @@
+{
+  "name": "dexterous",
+  "version": "0.0.1",
+  "description": "A light weight isomorphic JavaScript middleware server for browser, WebWorkers, and NodeJS.",
+  "engines": {
+    "node": "7.3.0"
+  },
+  "scripts": {
+  	"exampleServer": "node exampleServer.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anywhichway/dexterous.git"
+  },
+  "keywords": [],
+  "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
+  "bugs": {
+    "url": "https://github.com/anywhichway/dexterous/issues"
+  },
+  "homepage": "https://github.com/anywhichway/dexterous#readme",
+  "devDependencies": {
+    "browserify": "^13.3.0"
+  },
+  "dependencies": {
+    "ws": "^1.1.1"
+  }
+}

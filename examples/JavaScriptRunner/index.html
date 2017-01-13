@@ -1,0 +1,52 @@
+<html>
+<head>
+<script type="text/javascript" src="/dexterous/dexterous.js"></script>
+</head>
+<body>
+<p>Make sure to start the example NodeJS server using 'npm run exampleServer'!</p>
+<div id="console"></div>
+
+<script type="text/javascript">
+
+
+const browserConsole = {
+	log() {
+		const el = document.getElementById("console");
+		for(let i=0;i<arguments.length;i++) {
+			el.innerHTML += (arguments[i] + " ");
+		}
+	}
+}
+const worker = new Dexterous.Worker(undefined,undefined,"/JavaScriptRunner/worker.js");
+worker.listen(3000,"127.0.0.1").then(() => {
+	let message = worker.createResponse();
+	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.end("return 'I am a told I am a Dexterous WebWorker<br>'",true).then((result) => {
+		browserConsole.log(result);
+	});
+});
+
+
+if(typeof(Dexterous.SharedWorker)==="function") {
+	const sharedworker = new Dexterous.SharedWorker()
+	sharedworker.listen(3000,"127.0.0.1").then(() => {
+		const message = sharedworker.createResponse();
+		message.writeHead(200,{"Content-Type":"application/javascript"});
+		message.end("return 'I am told I am a Dexterous SharedWebWorker<br>'",true).then((result) => {
+			browserConsole.log(result);
+		});
+	});
+}
+
+const client = new Dexterous.Client(document.location.hostname);
+client.listen(3000,(window.location.hostname.length>0 ? window.location.hostname : "127.0.0.1")).then(() => {
+	let message = client.createResponse();
+	message.headers["Content-Type"] = "text/javascript";
+	message.end("return 'I am told I am NodeJS Dexterous Server<br>'",true).then((result) => {
+		browserConsole.log(result);
+	});
+});
+
+</script>
+</body>
+</html>
