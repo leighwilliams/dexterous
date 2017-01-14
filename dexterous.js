@@ -122,7 +122,7 @@
 			return result;
 		}
 		use(handler) {
-			const GeneratorFunction = function*(){}.constructor;
+			const GeneratorFunction = function *(){}.constructor;
 			if(handler instanceof GeneratorFunction) {
 				this.handlers.push(handler);
 			} else {

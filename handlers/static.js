@@ -16,6 +16,6 @@
 			} catch(e) {
 				return next;
 			}
-		}
+		};
 	};
 }).call(this);

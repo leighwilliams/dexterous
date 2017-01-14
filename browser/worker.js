@@ -9,7 +9,7 @@
 			me.socket = me.worker;
 			me.socket.onmessage = (message) => {
 				const response = me.createResponse(message.data);
-			  	me.onmessage(message.data,response);
+				me.onmessage(message.data,response);
 			};
 			return Promise.resolve();
 		}

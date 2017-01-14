@@ -16,7 +16,7 @@
 				worker.onmessage=function(message){
 					const response = me.createResponse(message.data,this);
 					me.onmessage(message.data,response);
-				}
+				};
 			} else if(typeof(SharedWorkerGlobalScope)!=="undefined" && worker instanceof SharedWorkerGlobalScope) {
 				worker.onconnect=function(e) {
 					const port = e.ports[0]; 
@@ -25,7 +25,7 @@
 						me.onmessage(message.data,response);
 					}
 					port.start();
-				}
+				};
 			}
 			return Promise.resolve();
 		}

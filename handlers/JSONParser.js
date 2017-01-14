@@ -8,7 +8,7 @@
 			}
 		}
 		return next;
-	}
+	};
 	if(typeof(module)==="object") {
 		module.exports = f;
 	} else {
