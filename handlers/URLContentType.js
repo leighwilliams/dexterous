@@ -21,5 +21,5 @@
 			}
 		}
 		return next;
-	}
-}).call(this)
+	};
+}).call(this);

@@ -1,9 +1,9 @@
 (function() {
 	module.exports = function(alias,root) {
 		return function(request,response,next) {
-			url = require("url"),
-			path = require("path"),
-			fs = require("fs");
+			const url = require("url"),
+				path = require("path"),
+				fs = require("fs");
 			if(!request.url) {
 				return next;
 			}
@@ -19,6 +19,6 @@
 				}
 			}
 			return next;
-		}
+		};
 	}
 }).call(this);

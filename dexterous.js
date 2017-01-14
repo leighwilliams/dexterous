@@ -58,7 +58,7 @@
 			this.headers.Status = 200;
 		}
 		return this.client.send(this,wait);
-	}
+	};
 	class Dexterous {
 		constructor(options={}) {
 			this.waiting = {}; // id map of messages waiting for response
@@ -84,7 +84,7 @@
 				if(result.value) {
 					maxi = i;
 					return true;
-				};
+				}
 			});
 			// go back up the handler stack;
 			iterators.slice(0,maxi+1).reverse().forEach((iterator) => {

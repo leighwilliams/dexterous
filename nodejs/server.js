@@ -46,7 +46,7 @@
 							response.end("Not Implemented");
 						}
 					});
-				};
+				}
 				return new Promise((resolve,reject) => {
 					me.server.listen(port,location,() => { 
 						 console.log("Dexterous listening on " + (me.options.secure ? "https" : "http") + "://" + (location ? location : "*") + ":" + port);

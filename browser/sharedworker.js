@@ -9,8 +9,8 @@
 			me.socket = me.worker.port;
 			me.socket.onmessage = (message) => {
 				const response = me.createResponse(message.data);
-			  	me.onmessage(message.data,response);
-			}
+				me.onmessage(message.data,response);
+			};
 			me.socket.start();
 			return Promise.resolve();
 		}
