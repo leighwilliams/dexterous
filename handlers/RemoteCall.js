@@ -25,8 +25,8 @@
 					
 				} else if(typeof(request.body.value)!=="undefined") {
 					scope[request.body.key] = request.body.value;
-					response.writeHead(200);
-					response.end();
+					response.writeHead(200,{"Content-Type":"application/json"});
+					response.end(true);
 				} else {
 					const result = scope[request.body.key];
 					response.writeHead(200,{"Content-Type":"application/json"});

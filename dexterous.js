@@ -130,61 +130,6 @@
 			}
 		}
 	}
-	class DexterousWorker extends Dexterous {
-		constructor(options) {
-			super(options);
-		}
-		listen(port=window.location.port,host=window.location.hostname,path="/dexterous/worker.js") {
-			const me = this;
-			me.worker = new Worker("http://" + host + ":" + port + path);
-			me.socket = me.worker;
-			me.socket.onmessage = (message) => {
-				const response = me.createResponse(message.data);
-			  	me.onmessage(message.data,response);
-			}
-			return Promise.resolve();
-		}
-	}
-	class DexterousSharedWorker extends Dexterous {
-		constructor(options) {
-			super(options);
-		}
-		listen(port=window.location.port,host=window.location.hostname,path="/dexterous/worker.js") {
-			const me = this;
-			me.worker = new SharedWorker("http://" + host + ":" + port + path);
-			me.socket = me.worker.port;
-			me.socket.onmessage = (message) => {
-				const response = me.createResponse(message.data);
-			  	me.onmessage(message.data,response);
-			}
-			me.socket.start();
-			return Promise.resolve();
-		}
-	}
-	class DexterousBrowserServer extends Dexterous {
-		constructor(options) {
-			super(options);
-		}
-		listen(worker) {
-			const me = this;
-			if(typeof(DedicatedWorkerGlobalScope)!=="undefined" && worker instanceof  DedicatedWorkerGlobalScope) {
-				worker.onmessage=function(message){
-					const response = me.createResponse(message.data,this);
-					me.onmessage(message.data,response);
-				}
-			} else if(typeof(SharedWorkerGlobalScope)!=="undefined" && worker instanceof SharedWorkerGlobalScope) {
-				worker.onconnect=function(e) {
-					const port = e.ports[0]; 
-					port.onmessage=function(message){
-						const response = me.createResponse(message.data,port);
-						me.onmessage(message.data,response);
-					}
-					port.start();
-				}
-			}
-			return Promise.resolve();
-		}
-	}
 	class DexterousClient extends Dexterous {
 		constructor(options={}) {
 			super(options);
@@ -239,20 +184,12 @@
 			});
 		}
 	}
-	Dexterous.Response = DexterousResponse;
 	Dexterous.Client = DexterousClient;
 	if(ONSERVER) {
 		const r = require;
 		Dexterous.Server = r("./server.js")({Dexterous});
 		module.exports = Dexterous;
 	} else {
-		if(typeof(Worker)!=="undefined") {
-			Dexterous.Worker = DexterousWorker;
-		}
-		if(typeof(SharedWorker)!=="undefined") {
-			Dexterous.SharedWorker = DexterousSharedWorker;
-		}
-		Dexterous.Server = DexterousBrowserServer;
 		this.Dexterous = Dexterous;
 	}
 }).call(this);

@@ -1,6 +1,8 @@
 <html>
 <head>
 <script type="text/javascript" src="/dexterous/dexterous.js"></script>
+<script type="text/javascript" src="/dexterous/worker.js"></script>
+<script type="text/javascript" src="/dexterous/sharedworker.js"></script>
 </head>
 <body>
 <p>Make sure to start the example NodeJS server using 'npm run exampleServer'!</p>
@@ -42,7 +44,7 @@ const client = new Dexterous.Client(document.location.hostname);
 client.listen(3000,(window.location.hostname.length>0 ? window.location.hostname : "127.0.0.1")).then(() => {
 	let message = client.createResponse();
 	message.headers["Content-Type"] = "text/javascript";
-	message.end("return 'I am told I am NodeJS Dexterous Server<br>'",true).then((result) => {
+	message.end("return 'I am told I am a Dexterous NodeJS Server<br>'",true).then((result) => {
 		browserConsole.log(result);
 	});
 });

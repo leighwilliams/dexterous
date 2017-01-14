@@ -1,4 +1,8 @@
-importScripts("/dexterous/dexterous.js","/dexterous/handlers/RequestResponseLogger.js","/dexterous/handlers/JSONParser.js","/dexterous/handlers/RemoteCall.js");
+importScripts("/dexterous/dexterous.js",
+		"/dexterous/browserserver.js",
+		"/dexterous/handlers/RequestResponseLogger.js",
+		"/dexterous/handlers/JSONParser.js",
+		"/dexterous/handlers/RemoteCall.js");
 const server = new Dexterous.Server();
 server.use(RequestResponseLogger);
 server.use(JSONParser);

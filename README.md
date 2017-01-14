@@ -3,6 +3,8 @@ A light weight isomorphic JavaScript middleware server for browser, WebWorkers, 
 
 # Updates (reverse chronological order)
 
+2017-01-13 v0.0.3 - Made more modular. Added DexterousRemote.
+
 2017-01-13 v0.0.2 - Externalized handlers. Added examples.
 
 2017-01-13 v0.0.1 - Early beta
