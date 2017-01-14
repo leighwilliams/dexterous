@@ -187,7 +187,7 @@
 	Dexterous.Client = DexterousClient;
 	if(ONSERVER) {
 		const r = require;
-		Dexterous.Server = r("./server.js")({Dexterous});
+		Dexterous.Server = r("./nodejs/server.js")({Dexterous});
 		module.exports = Dexterous;
 	} else {
 		this.Dexterous = Dexterous;

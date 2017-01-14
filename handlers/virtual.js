@@ -18,6 +18,7 @@
 					return next;
 				}
 			}
+			return next;
 		}
 	}
 }).call(this);

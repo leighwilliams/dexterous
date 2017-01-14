@@ -5,6 +5,13 @@
 		}
 		listen(worker) {
 			const me = this;
+			me.use(function *(request,response,next) {
+				yield next;
+				if(!response.getHeader("Status")){
+					response.writeHead(501, "text/plain");
+					response.end("Not Implemented");
+				}
+			});
 			if(typeof(DedicatedWorkerGlobalScope)!=="undefined" && worker instanceof  DedicatedWorkerGlobalScope) {
 				worker.onmessage=function(message){
 					const response = me.createResponse(message.data,this);

@@ -1,5 +1,5 @@
 (function() {
-	module.exports = function(request,response,next) {
+	module.exports = (moreTypes={}) => function(request,response,next) {
 		if(request.url) {
 			const i = request.url.lastIndexOf(".");
 			if(i>0) {
@@ -9,9 +9,14 @@
 						".html": "text/html"
 					},
 					ext = request.url.substring(i);
-				let type = types[ext];;
+				let type = moreTypes[ext];
 				if(type) {
 					response.setHeader("Content-Type",type);
+				} else {
+					type = types[ext];
+					if(type) {
+						response.setHeader("Content-Type",type);
+					}
 				}
 			}
 		}

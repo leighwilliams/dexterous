@@ -5,29 +5,26 @@
 			constructor(server,options) {
 				super(options);
 				this.server = server;
+				try {
+					this.use(require("dexterous/handlers/virtual")("/dexterous","/node_modules/dexterous"));
+					//console.log("using package")
+				} catch(e) {
+					//console.log("using source")
+					this.use(require("../handlers/virtual.js")("/dexterous","/"));
+				}
 			}
 			listen(port,location) {
 				const me = this;
 				if(!me.server) {
-					const r = require,
-						protocol = (me.options.secure ? r("https") : r("http")),
-						url = r("url"),
-						path = r("path"),
-						fs = r("fs"),
-						WebSocket = r("ws"),
-						os = r("os"),
+					const protocol = (me.options.secure ? require("https") : require("http")),
+						url = require("url"),
+						path = require("path"),
+						fs = require("fs"),
+						WebSocket = require("ws"),
+						os = require("os"),
 						SocketServer = WebSocket.Server;
 					me.server = protocol.createServer((request,response) => {
-						const uri = url.parse(request.url).pathname;
-						if(uri==="/dexterous.js") {
-				    		const filename = path.join(process.cwd(), "/index.js");
-							response.writeHead(200, { "Content-Type":"text/javascript","Access-Control-Allow-Origin":"*" });
-							fs.readFile(filename,(err,data) => {
-								response.end(data);
-							});
-						} else {
-							me.onmessage(request,response);
-						}
+						me.onmessage(request,response);
 					});
 					me.socket = new SocketServer({server:me.server});
 					me.use(function *(request,response,next) {

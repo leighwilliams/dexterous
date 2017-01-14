@@ -1,5 +1,5 @@
 (function() {
-	const f = (scope,returnsError) => {
+	const f = (scope={},returnsError) => {
 		return (request,response,next) => {
 			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0 && typeof(request.body)==="string") {
 				try {

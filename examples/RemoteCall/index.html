@@ -1,7 +1,7 @@
 <html>
 <head>
 <script type="text/javascript" src="/dexterous/dexterous.js"></script>
-<script type="text/javascript" src="/dexterous/worker.js"></script>
+<script type="text/javascript" src="/dexterous/browser/worker.js"></script>
 <script type="text/javascript" src="/dexterous/remote.js"></script>
 </head>
 <body>
@@ -22,19 +22,19 @@ const browserConsole = {
 const worker = new Dexterous.Worker();
 worker.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
 	const remote = new Dexterous.Remote(worker);
-	remote.get("testProperty").then((result) => {
+	remote.get(undefined,"testProperty").then((result) => {
 		browserConsole.log("value of testProperty is",result,"<br>");
 	});
-	remote.set("testProperty","newValue").then((result) => {
+	remote.set(undefined,"testProperty","newValue").then((result) => {
 		browserConsole.log("testProperty changed",result,"<br>");
 	});
-	remote.get("testProperty").then((result) => {
+	remote.get(undefined,"testProperty").then((result) => {
 		browserConsole.log("value of testProperty is",result,"<br>");
 	});
-	remote.call("testFunction",1).then((result) => {
+	remote.call(undefined,"testFunction",1).then((result) => {
 		browserConsole.log(result,"<br>");
 	});
-	remote.apply("testFunction",[1]).then((result) => {
+	remote.apply(undefined,"testFunction",[1]).then((result) => {
 		browserConsole.log(result,"<br>");
 	});
 });

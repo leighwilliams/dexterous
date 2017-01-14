@@ -1,15 +1,24 @@
 (function() {
-	const f = (scope,returnsError) => {
+	const f = (scope={},returnsError) => {
 		return (request,response,next) => {
-			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0 && request.body && typeof(request.body)==="object") {
-				let object = scope;
-				if(request.body.id) {
-					// object = 
+			let body = request.body,
+				type = typeof(body);
+			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0
+					&& request.headers.method==="GET"
+					&& request.body
+					&& (type==="object" || type==="string")) {
+				if(type==="string") {
+					try {
+						body = JSON.parse(body);
+					} catch(e) {
+						return next;
+					}
 				}
-				const type = typeof(scope[request.body.key]);
+				let object = (body.thisArg ? body.thisArg : scope);
+				type = typeof(scope[request.body.key]);
 				if(type==="function") {
 					try {
-						const result = scope[request.body.key].apply(scope,request.body.arguments);
+						const result = scope[request.body.key].apply(scope,request.body.argumentsList);
 						response.writeHead(200,{"Content-Type":"application/json"});
 						response.end(result);
 					} catch(e) {
