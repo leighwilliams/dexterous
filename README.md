@@ -3,7 +3,7 @@ A light weight isomorphic JavaScript middleware server for browser, WebWorkers, 
 
 # Introduction
 
-Dextrous is an application middleware server similar to Koa.js or Node Express; however, is was designed from the start to be smaller (less than 6K core minimized and 2K gzipped) and run in either a browser or NodeJS server environment. In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Finally, Dextrous comes with a remote object proxy and handler.
+Dextrous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller (the core is less than 400 lines of code 6K minimized or 2K gzipped). In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Finally, Dextrous comes with a remote object proxy and handler.
 
 # Installation
 
@@ -19,7 +19,7 @@ The sole dependency for Dexterous is the `ws` package.
 
 ## Servers
 
-Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with little or no instructions. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
+Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
 
 ```
 const Dexterous = require("dexterous.js"),
@@ -34,7 +34,7 @@ Handlers have either of the following signatures:
 function *(request,response,next) { ... [yield next ...] } // [ ] indicate optional code
 function (request,response,next) { ... [return next]; }
 ```
-If a generator function is used then the portion before the `yield` is called on the way down the handler stack and the portion after the `yield` is called as the handler stack unwinds. The handler `RequestResponseLogger` uses this approach to log inbound requests as they come in and outbound responses immediately after they are sent, even though it is the first handler below:
+If a generator function is used, then the portion before the `yield` is called on the way down the handler stack and the portion after the `yield` is called as the handler stack unwinds. The handler `RequestResponseLogger` uses this approach to log inbound requests as they come in and outbound responses immediately after they are sent, even though it is the first handler below:
 
 ```
 const Dexterous = require("dexterous"),
@@ -67,7 +67,7 @@ client.listen(3000,"127.0.0.1");
 </script>
 ```
 
-If the following were invoked on a server,then the `client` would log the request and response, although no response would be sent back to the server because the client is only configured to log requests.
+If the following were invoked on a server, then the `client` would log the request and response, although no response would be sent back to the server because the client is only configured to log requests.
 
 ```
 const response = server.createResponse();
@@ -126,7 +126,7 @@ client.listen(3000,"127.0.0.1");
 ### MethodQueryString
 
 `MethodQueryString` if a function factory returning a handler that looks for a `method` query parameter and replaces the request.headers.method with the value. The value is upper cased during processing. `MethodQueryString` is useful when an entirely client based REST API is needed without the complexities of JavaScript XHR or other request marshaling approaches. If the method is PUT or POST, a `body` parameter will also be sought and parsed as JSON to replace the `request.body`. The JSON in the query string MUST
-use nomrmal double quotes, e.g. {"name":"Joe"} not {'name':'Joe'}.
+use normal double quotes, e.g. {"name":"Joe"} not {'name':'Joe'}.
 
 The `MethodQueryString` function factory takes one boolean argument. If `true` body parsing errors are ignored. If `false` (the default) the response is populated with a 400 status code and a body that says "Bad Request"; however, handler processing continues in case a subsequent handler can address the request.
 
@@ -154,7 +154,7 @@ There is a convenience class that can be loaded from `/dexterous/remote.js`. Thi
 
 `REST` is a function factory that returns a REST handler. The approach is more decalaritive and concise than that taken by Express or Koa. All responders are clustered together as part of a single object. Additionally, a separate router object does not have to be created. 
 
-The signature for the factory is `(path,{<method>:(id,request,response,next)[,...]})`. The useful values for `<method>` are `get`,`put`,`post`,`delete`. The `id` aregument to the handler is parsed from the url of the request.
+The signature for the factory is `(path,{<method>:(id,request,response,next)[,...]})`. The useful values for `<method>` are `get`,`put`,`post`,`delete`. The `id` argument to the handler is parsed from the url of the request.
 
 The below exampe is drawn from code in `exampleServer.js`:
 
