@@ -1,9 +1,9 @@
 (function() {
+	const url = require("url"),
+		path = require("path"),
+		fs = require("fs");
 	module.exports = function(root) {
 		return function(request,response,next) {
-			const url = require("url"),
-				path = require("path"),
-				fs = require("fs");
 			if(!request.url) {
 				return next;
 			}

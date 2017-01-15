@@ -87,6 +87,10 @@ When a server is recieving a request, a response object is automatically created
 
 All built-in handlers are provided in files of the same name as the handler in the directory `handlers`.
 
+### DefaultFile
+
+`DefaultFile` is a function factory that returns a handler configured to load the file provided as an argument if a URL terminated with a `/` is requested.
+
 ### JavaScriptRunner
 
 `JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError)`. Requests recieved with a `Content-Type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and little else. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a JavaScriptRunner. See the examples directory.
@@ -98,6 +102,8 @@ let message = client.createResponse();
 		browserConsole.log(result);
 	});
 ```
+
+### JSONParser
 
 `JSONParser` will parse and replace `request.body` as JSON when the `request.header["Content-Type"]==="application/json"`. If the existing body can't be parsed, then it is not changed. `JSONParser` should always be used on the receiving end of services using `JavaScriptRunner` so that the responses can be parsed,i.e. if the server uses `JavaScriptRunner` then the client should use `JSONParser` and if the client uses `JavaScriptRunner` then the service should use `JSONParser`.
 
@@ -117,7 +123,16 @@ client.use(require("handlers/JSONParser"));
 client.listen(3000,"127.0.0.1");
 ```
 
-`RemoteCall` if a function factory that returns a handler which responds to remote call requests with non-null content type of "application/javascript" and method GET. The signature is `(scope,returnsError)`. The `scope` should be the default execution scope for requests. This may be overridden by providing a `thisArg` property values as described below.
+### MethodQueryString
+
+`MethodQueryString` if a function factory returning a handler that looks for a `method` query parameter and replaces the request.headers.method with the value. The value is upper cased during processing. `MethodQueryString` is useful when an entirely client based REST API is needed without the complexities of JavaScript XHR or other request marshaling approaches. If the method is PUT or POST, a `body` parameter will also be sought and parsed as JSON to replace the `request.body`. The JSON in the query string MUST
+use nomrmal double quotes, e.g. {"name":"Joe"} not {'name':'Joe'}.
+
+The `MethodQueryString` function factory takes one boolean argument. If `true` body parsing errors are ignored. If `false` (the default) the response is populated with a 400 status code and a body that says "Bad Request"; however, handler processing continues in case a subsequent handler can address the request.
+
+### RemoteCall
+
+`RemoteCall` is a function factory that returns a handler which responds to remote call requests with non-null content type of "application/javascript" and method GET. The signature is `(scope,returnsError)`. The `scope` should be the default execution scope for requests. This may be overridden by providing a `thisArg` property values as described below.
 
 The handler expects a request with a body that may be a JSON object or a string parseable as a JSON object. The handler `JSONParser` is not required, and in fact would do nothing since the content type is not "application/json". The response content type will always be "application/json".
 
@@ -131,13 +146,86 @@ The body object must have some combination of these properties:
 
 There is a convenience class that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that it provides a constructor `Dexterous.Remote`. This class takes a client as a constructor argument and provides the methods `get`,`set`,`call`, and `apply` which it marshalls into the appropriate form for dispatch by the client. `Dexterous.Remote` does not currently support a schema argument to ensure all requests to be made of the server are correct. See the example `examples/RemoteCall`.
 
-`RequestResponseLogger` - Simply logs the request body on the way down the handler stack and the response on the way back up. Usually placed as the first handler.
+### RequestResponseLogger
 
-`static` - A function factory that returns a handler configured to load files out of the directory tree provided as the argument. If a requested URL is not found, `static` will yield to the next handler. Dexterous has a build in handler that will return 404 - Not Found if http requests remain unhandled by the time the handler stack has been fully processed.
+`RequestResponseLogger` simply logs the request body on the way down the handler stack and the response on the way back up. Usually placed as the first handler.
 
-`URLContentType` - A function factory that return handler that sets the `Content-Type` header of the response object to a content type based on the extension of the requested resource. The default handler only processes `.js`, `.htm`, and `.html` extensions. Additonal extensions can be provided via a map argument to the factory. The map should take the form `{".<extension>":"<content type>"[,...]}`. If the map argument is provided, it takes precedence for conflicting extension keys and will over-ride the built-ins.
+### REST
 
-`virtual` - A function factory that returns a handler configured to map a URI prefix to a static directory. Dexterous uses this interally to map the root URI `/dextrous` to either the root directory of the `/node_modules/dexteorus` directory.
+`REST` is a function factory that returns a REST handler. The approach is more decalaritive and concise than that taken by Express or Koa. All responders are clustered together as part of a single object. Additionally, a separate router object does not have to be created. 
+
+The signature for the factory is `(path,{<method>:(id,request,response,next)[,...]})`. The useful values for `<method>` are `get`,`put`,`post`,`delete`. The `id` aregument to the handler is parsed from the url of the request.
+
+The below exampe is drawn from code in `exampleServer.js`:
+
+```
+server.use(require("./handlers/REST.js")("/REST/test/",{
+	get: (id,request,response,next) => {
+		if(typeof(id)!=="undefined") {
+			response.end("GET with id: " + id);
+		} else {
+			response.end("GET without id");
+		}
+	},
+	post: (id,request,response,next) => {
+		if(id) {
+			response.end("POST with id: " + id);
+		} else {
+			response.end("POST without id");
+		}
+	},
+	put: (id,request,response,next) => {
+		if(id) {
+			response.end("PUT with id: " + id);
+		} else {
+			response.end("PUT without id");
+		}
+	},
+	delete: (id,request,response,next) => {
+		if(id) {
+			response.end("DELETE with id: " + id);
+		} else {
+			response.end("DELETE without id ... which should probably throw an error in production or be ignored.");
+		}
+	}
+}));
+```
+
+### static
+
+`static` is a function factory that returns a handler configured to load files out of the directory tree provided as the argument. If a requested URL is not found, `static` will yield to the next handler. Dexterous has a built in handler that will return 404 - Not Found if http requests remain unhandled by the time the handler stack has been fully processed.
+
+### URLContentType
+
+`URLContentType` is a function factory that returns a handler that sets the `Content-Type` header of the response object to a content type based on the extension of the requested resource. There are a number of built-ins as shown below. Additonal extensions can be provided via a map argument to the factory. The map should take the form `{".<extension>":"<content type>"[,...]}`. If the map argument is provided, it takes precedence for conflicting extension keys and will over-ride the built-ins.
+
+The built-ins are:
+
+```
+".gzip": "application/gzip",
+".gif": "image/gif",
+".htm": "text/html",
+".html": "text/html",
+".jpg": "image/jpeg",
+".jpeg": "image/jpeg",
+".js": "application/javascript",
+".md": "text/markdown",
+".mp4": "video/mp4",
+".mp4v": "video/mp4",
+".mpg4": "video/mp4",
+".mpg": "video/mpeg",
+".mpeg": "video/mpeg",
+".pdf": "applicaion/pdf",
+".png": "image/png",
+".txt": "text/plain",
+".wsdl": "application/wsdl+xml",
+".xml": "application/xml",
+".xsl": "application/xml"
+```
+
+### virtual
+
+`virtual` is a function factory that returns a handler configured to map a URI prefix to a static directory. Dexterous uses this interally to map the root URI `/dextrous` to either the root directory or the `/node_modules/dexterous` directory.
 
 # Advanced Use
 
@@ -179,6 +267,8 @@ If your Dexteorus server does not seem to be responding but is up, there is prob
 To be written
 
 # Updates (reverse chronological order)
+
+2017-01-15 v0.0.5 - Documentation updates. Also added `DefaultFile`,`REST`, and `MethodQueryString` handlers.
 
 2017-01-15 v0.0.4 - Documentation.
 
