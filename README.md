@@ -3,7 +3,12 @@ A light weight isomorphic JavaScript middleware server for browser, WebWorkers, 
 
 # Introduction
 
-Dextrous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller (the core is less than 400 lines of code 6K minimized or 2K gzipped). In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Finally, Dextrous comes with a remote object proxy and handler and uses a more declaritive approach to URL routing.
+Dextrous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller (the core is less than 400 lines of code, 6K minimized or 2K gzipped). In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Dextrous also comes with:
+
+1) A bi-directional object proxy and handler so clients can offload computation to servers or servers can offload computation to clients.
+2) A more declaritive approach to URL routing of REST requests.
+3) Simple REST enablement for CURL requests.
+4) A watch handler similar to Meteor so that any file changes on the server will force clients to reload pages when a page or resources it references change.
 
 # Installation
 
@@ -19,10 +24,10 @@ The sole dependency for Dexterous is the `ws` package.
 
 ## Servers
 
-Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
+Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched looks as follows:
 
 ```
-const Dexterous = require("dexterous.js"),
+const Dexterous = require("dexterous"),
 	server = new Dexterous.Server();
 server.use(require("handlers/static.js")());
 server.listen(3000,"127.0.0.1");
@@ -31,7 +36,7 @@ server.listen(3000,"127.0.0.1");
 Handlers have either of the following signatures:
 
 ```
-function *(request,response,next) { ... [yield next ...] } // [ ] indicate optional code
+function *(request,response,next) { ... [yield next ...] } // [ ] indicates optional code
 function (request,response,next) { ... [return next]; }
 ```
 If a generator function is used, then the portion before the `yield` is called on the way down the handler stack and the portion after the `yield` is called as the handler stack unwinds. The handler `RequestResponseLogger` uses this approach to log inbound requests as they come in and outbound responses immediately after they are sent, even though it is the first handler below:
@@ -44,18 +49,20 @@ server.use(require("handlers/static")());
 server.listen(3000,"127.0.0.1");
 ```
 
+Handlers are free to modify the `response` and `request` objects. The property `response.headers.sent` will be true if a socket `response` has already been sent. Trying to send more data will result in an error.
+
 ## Clients
 
 Clients are created in a manner similar to servers. Once connected to a server, the server can send requests to the client as though it were a peer server and they will be processed using any handlers installed on the client, e.g:
 
 ```
-const Dexterous = require("dexterous.js");
+const Dexterous = require("dexterous");
 const client = new Dexterous.Client();
 client.use(require("handlers/RequestResponseLogger"));
 client.listen(3000,"127.0.0.1");
 ```
 
-Similar client creation code can be used in a browser without the need for Browserify:
+Similar client creation code can be used in a browser:
 
 ```
 <script type="text/javascript" src="/dexterous/dexterous.js"></script>
@@ -81,7 +88,7 @@ response.end("hello client!");
 
 The `.end` method on a socket response has an extra argument indicating if the response represents a message that expects a return value. When set to true, the reponse header method gets set to `GET` and the method will return a Promise.
 
-When a server is recieving a request, a response object is automatically created. If a client wish to send information to a server or a server wished to sned information to a client unsolicitied, then a response object needs to be created using `<clientOrServer>.createResponse()`. See the handler examples below.
+When a server is recieving a request, a response object is automatically created. If a client wishes to send information to a server or a server wishes to send information to a client unsolicitied, then a response object needs to be created using `<clientOrServer>.createResponse()`. See the handler examples below.
 
 ## Handlers
 
@@ -89,23 +96,31 @@ All built-in handlers are provided in files of the same name as the handler in t
 
 ### DefaultFile
 
-`DefaultFile` is a function factory that returns a handler configured to load the file provided as an argument if a URL terminated with a `/` is requested.
+`DefaultFile` is a function factory that returns a handler configured to re-write the requested URL if a URL terminated with a `/` is requested. It will also re-write a `referer` in a header for socket client requests.
+
+The function factory call signature is `(file)`.
 
 ### JavaScriptRunner
 
-`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError)`. Requests recieved with a `Content-Type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and little else. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a JavaScriptRunner. See the examples directory.
+`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript buil-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
+
+The function factory call signature is `(scope={},returnsError=false)`.
+
+Below is an example call:
 
 ```
 let message = client.createResponse();
-	message.writeHead(200,{"Content-Type":"application/javascript"});
+	message.writeHead(200,{"content-type":"application/javascript"});
 	message.end("return 10 * 10",true).then((result) => {
 		browserConsole.log(result);
 	});
 ```
 
+See the `examples\JavaScriptRunner` directory.
+
 ### JSONParser
 
-`JSONParser` will parse and replace `request.body` as JSON when the `request.header["Content-Type"]==="application/json"`. If the existing body can't be parsed, then it is not changed. `JSONParser` should always be used on the receiving end of services using `JavaScriptRunner` so that the responses can be parsed,i.e. if the server uses `JavaScriptRunner` then the client should use `JSONParser` and if the client uses `JavaScriptRunner` then the service should use `JSONParser`.
+`JSONParser` will parse and replace `request.body` as JSON when the `request.header["content-type"]==="application/json"`. If the existing body can't be parsed, then it is not changed. `JSONParser` should always be used on the receiving end of services using `JavaScriptRunner` so that the responses can be parsed, i.e. if the server uses `JavaScriptRunner` then the client should use `JSONParser` and if the client uses `JavaScriptRunner` then the server should use `JSONParser`.
 
 The below will first print "string" and then print "object".
 
@@ -114,7 +129,7 @@ const Dexterous = require("dexterous.js");
 const server = new Dexterous.Server();
 server.listen(3000,"127.0.0.1").then(() => {
 	let message = server.createResponse();
-		message.writeHead(200,{"Content-Type":"application/JSON"});
+		message.writeHead(200,{"content-type":"application/JSON"});
 		message.end({message:"Hello!",serverTime:Date.now()}); // this will be stringified for transit
 });
 const client = new Dexterous.Client();
@@ -125,8 +140,7 @@ client.listen(3000,"127.0.0.1");
 
 ### MethodQueryString
 
-`MethodQueryString` if a function factory returning a handler that looks for a `method` query parameter and replaces the request.headers.method with the value. The value is upper cased during processing. `MethodQueryString` is useful when an entirely client based REST API is needed without the complexities of JavaScript XHR or other request marshaling approaches. If the method is PUT or POST, a `body` parameter will also be sought and parsed as JSON to replace the `request.body`. The JSON in the query string MUST
-use normal double quotes, e.g. {"name":"Joe"} not {'name':'Joe'}.
+`MethodQueryString` if a function factory returning a handler that looks for a `method` query parameter and replaces the request.headers.method with the value. The value is upper cased during processing. `MethodQueryString` is useful when an entirely client based CURL usable REST API is needed without the complexities of JavaScript XHR or other request marshaling approaches. If the method is PUT or POST, a `body` parameter will also be sought and parsed as JSON to replace the `request.body`. The JSON in the query string MUST use normal double quotes, e.g. `{"name":"Joe"}` not `{'name':'Joe'}` or `{\"name\":\"Joe\"}`.
 
 The `MethodQueryString` function factory takes one boolean argument. If `true` body parsing errors are ignored. If `false` (the default) the response is populated with a 400 status code and a body that says "Bad Request"; however, handler processing continues in case a subsequent handler can address the request.
 
@@ -144,7 +158,7 @@ The body object must have some combination of these properties:
 4. `argumentsList` - An Array that is expected if the `key` refers to a function.
 5. `value` (optional) - if provided and the `key` refers to a property, the property is set to the value, othwerwise it is ignored. If no `value` is provided, the handler returns the current value of the property to the client.
 
-There is a convenience class that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that it provides a constructor `Dexterous.Remote`. This class takes a client as a constructor argument and provides the methods `get`,`set`,`call`, and `apply` which it marshalls into the appropriate form for dispatch by the client. `Dexterous.Remote` does not currently support a schema argument to ensure all requests to be made of the server are correct. See the example `examples/RemoteCall`.
+There is a convenience method that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server instances provide a method `<server>.createRemote(schema,socket)`. The returned object provides the methods `get`,`set`,`call`, and `apply` which it marshalls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
 
 ### RequestResponseLogger
 
@@ -156,36 +170,36 @@ There is a convenience class that can be loaded from `/dexterous/remote.js`. Thi
 
 The signature for the factory is `(path,{<method>:(id,request,response,next)[,...]})`. The useful values for `<method>` are `get`,`put`,`post`,`delete`. The `id` argument to the handler is parsed from the url of the request.
 
+Not writing a response will cause the server to fall through to a default `404 Not Found` or `400 Bad Request` error.
+
 The below exampe is drawn from code in `exampleServer.js`:
 
 ```
-server.use(require("./handlers/REST.js")("/REST/test/",{
+server.use(require("./handlers/REST")("/REST/test/",{
 	get: (id,request,response,next) => {
 		if(typeof(id)!=="undefined") {
 			response.end("GET with id: " + id);
-		} else {
-			response.end("GET without id");
 		}
 	},
 	post: (id,request,response,next) => {
-		if(id) {
-			response.end("POST with id: " + id);
-		} else {
-			response.end("POST without id");
+		if(request.body) {
+			if(id) {
+				request.body.id = id;
+				response.end("POST with id: " + id  + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
+			} else { 
+				request.body.id = Math.round(Math.random()*1000);
+				response.end("POST without id (server assigned)" + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
+			}
 		}
 	},
 	put: (id,request,response,next) => {
-		if(id) {
-			response.end("PUT with id: " + id);
-		} else {
-			response.end("PUT without id");
+		if(request.body && id) {
+			response.end("PUT with id: " + id  + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
 		}
 	},
 	delete: (id,request,response,next) => {
 		if(id) {
 			response.end("DELETE with id: " + id);
-		} else {
-			response.end("DELETE without id ... which should probably throw an error in production or be ignored.");
 		}
 	}
 }));
@@ -195,9 +209,13 @@ server.use(require("./handlers/REST.js")("/REST/test/",{
 
 `static` is a function factory that returns a handler configured to load files out of the directory tree provided as the argument. If a requested URL is not found, `static` will yield to the next handler. Dexterous has a built in handler that will return 404 - Not Found if http requests remain unhandled by the time the handler stack has been fully processed.
 
+The call signature is `(root="/")`. The `root` should start with a `/` and is relative to the current working directory of the NodeJS process.
+
 ### URLContentType
 
-`URLContentType` is a function factory that returns a handler that sets the `Content-Type` header of the response object to a content type based on the extension of the requested resource. There are a number of built-ins as shown below. Additonal extensions can be provided via a map argument to the factory. The map should take the form `{".<extension>":"<content type>"[,...]}`. If the map argument is provided, it takes precedence for conflicting extension keys and will over-ride the built-ins.
+`URLContentType` is a function factory that returns a handler that sets the `content-type` header of the response object to a content type based on the extension of the requested resource. There are a number of built-ins as shown below. Additonal extensions can be provided via a map argument to the factory. The map should take the form `{".<extension>":"<content type>"[,...]}`. If the map argument is provided, it takes precedence for conflicting extension keys and will over-ride the built-ins.
+
+The call signature is `(moreTypes={})`.
 
 The built-ins are:
 
@@ -227,6 +245,27 @@ The built-ins are:
 
 `virtual` is a function factory that returns a handler configured to map a URI prefix to a static directory. Dexterous uses this interally to map the root URI `/dextrous` to either the root directory or the `/node_modules/dexterous` directory.
 
+The call signature is `(alias,root)`. Both areguments are strings and should start with `/`.
+
+### watch
+
+`watch` is a function factory that given a server instance and directory will return a handler to watch the directory tree and notify connected browser clients to reload themselves when any resources in the directory tree they reference change. Updates to files outside the directory tree but referenced by the client will not cause reloads. Make sure to watch a directory sufficiently high in the tree. `watch` can only be called once, subsequent calls are no-ops.
+
+Watch should be placed after a `DefaultFile` handler on the server. 
+
+The call signtaure is `watch(directory="/")`. The `directory` argument should start with a `/`.
+
+The clients must be regular browser clients, not web workers, and must use a `JavaScriptRunner` that exposes the document object, e.g.:
+
+```
+const client = new Dexterous.Client();
+client.use(JavaScriptRunner({document}));
+client.listen(3000,(window.location.hostname.length>0 ? window.location.hostname : "127.0.0.1"));
+```
+
+See `examples/Watch`.
+
+
 # Advanced Use
 
 ## Web Workers
@@ -234,13 +273,13 @@ The built-ins are:
 Dexterous supports the creation of WebWorker and SharedWorker(Chrome Only) clients:
 
 ```
-const worker = new Dexterous.Worker();
-worker.listen(3000,"127.0.0.1",<path to worker code>)
+const client = new Dexterous.WorkerClient();
+client.listen(3000,"127.0.0.1",<path to worker code>)
 ```
 
 ```
-const worker = new Dexterous.SharedWorker();
-worker.listen(3000,"127.0.0.1",<path to worker code>)
+const client = new Dexterous.SharedWorkerClient();
+client.listen(3000,"127.0.0.1",<path to worker code>)
 ```
 
 The worker code file will generally take the form:
@@ -268,6 +307,8 @@ To be written
 
 # Updates (reverse chronological order)
 
+2017-01-16 v0.1.0 - Documentation and example updates. Added `watch` handler. Revised naming of Worker classes to be appended with "Client". Lowercased "content-type" to make consistent with NodJS approach to header processing.
+
 2017-01-15 v0.0.5 - Documentation updates. Also added `DefaultFile`,`REST`, and `MethodQueryString` handlers.
 
 2017-01-15 v0.0.4 - Documentation.
@@ -276,4 +317,4 @@ To be written
 
 2017-01-13 v0.0.2 - Externalized handlers. Added examples.
 
-2017-01-13 v0.0.1 - Early beta
+2017-01-13 v0.0.1 - Early public release.

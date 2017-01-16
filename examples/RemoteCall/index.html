@@ -1,11 +1,14 @@
 <html>
 <head>
 <script type="text/javascript" src="/dexterous/dexterous.js"></script>
-<script type="text/javascript" src="/dexterous/browser/worker.js"></script>
 <script type="text/javascript" src="/dexterous/remote.js"></script>
+<script type="text/javascript" src="/dexterous/browser/workerclient.js"></script>
+<script type="text/javascript" src="/dexterous/handlers/JSONParser.js"></script>
+<script type="text/javascript" src="/dexterous/handlers/RemoteCall.js"></script>
 </head>
 <body>
 <p>Make sure to start the example NodeJS server using 'npm run exampleServer'!</p>
+<p>You will need to be viewing the browser debugging console to see part of the results.</p>
 <div id="console"></div>
 
 <script type="text/javascript">
@@ -19,9 +22,12 @@ const browserConsole = {
 		}
 	}
 }
-const worker = new Dexterous.Worker();
-worker.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
-	const remote = new Dexterous.Remote(worker);
+
+const client = new Dexterous.WorkerClient();
+client.use(JSONParser);
+client.use(RemoteCall({testFunction: (arg) => { return "I am the client testFunction result, the arg was " + arg + ".";}, testProperty: "testValue"},true));
+client.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
+	let remote = client.createRemote();
 	remote.get(undefined,"testProperty").then((result) => {
 		browserConsole.log("value of testProperty is",result,"<br>");
 	});

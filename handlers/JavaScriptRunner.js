@@ -1,11 +1,11 @@
 (function() {
-	const f = (scope={},returnsError) => {
+	const f = (scope={},returnsError=false) => {
 		return (request,response,next) => {
-			if(["application/javascript","text/javascript"].indexOf(request.headers["Content-Type"])>=0 && typeof(request.body)==="string") {
+			if(["application/javascript","text/javascript"].indexOf(request.headers["content-type"])>=0 && typeof(request.body)==="string") {
 				try {
 					const result = new Function(request.body).call(scope);
 					if(request.headers.method==="GET") {
-						response.writeHead(200,{"Content-Type":"application/json"});
+						response.writeHead(200,{"content-type":"application/json"});
 						response.end(result);
 					} else {
 						response.writeHead(200);
@@ -14,7 +14,7 @@
 					const msg = "Expression: '"+ request.body + "' caused an error!";
 					console.log(msg+"\n",e);
 					if(returnsError) {
-						response.writeHead(500,{"Content-Type":"text/plain"});
+						response.writeHead(500,{"content-type":"text/plain"});
 						response.end(msg);
 					}
 				}

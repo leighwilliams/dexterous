@@ -62,6 +62,9 @@
 							}
 							const response = me.createResponse(message,ws);
 							me.onmessage(message,response);
+							if(message.headers.referer) {
+								ws.href = message.headers.referer;
+							}
 						});
 						ws.on("error",me.onerror);
 					});

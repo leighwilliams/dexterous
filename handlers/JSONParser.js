@@ -1,6 +1,6 @@
 (function() {
 	const f = (request,response,next) => {
-		if(request.headers["Content-Type"]==="application/json" && typeof(request.body)==="string") {
+		if(request.headers["content-type"]==="application/json" && typeof(request.body)==="string") {
 			try {
 				request.body = JSON.parse(request.body);
 			} catch(e) {

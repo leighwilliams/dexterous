@@ -14,7 +14,7 @@
 			if(uri===path) {
 				const method = (request.headers.method ? request.headers.method.toLowerCase() : "get");
 				if(restHandlers[method]) {
-					return restHandlers[method](id,request,response,next);
+					restHandlers[method](id,request,response,next);
 				}
 			}
 		}

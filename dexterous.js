@@ -1,4 +1,4 @@
-(function() {
+(function() { 
 	const ONSERVER = (typeof(window)==="undefined" && typeof(require)==="function" && typeof(module)==="object" ? true : false);
 	class DexterousResponse {
 		constructor(client,request,socket) {
@@ -36,16 +36,16 @@
 			this.headers[property] = value;
 		}
 	}
-	DexterousResponse.prototype.end = function(data,wait) {
+	DexterousResponse.prototype.end = function(data,wait) { // outside class because "end" seems to be reserved in Edge
 		if(this.headers.sent) {
 			throw new Error("response already sent");
 		}
 		const type = typeof(data);
-		if(!this.headers["Content-Type"]) {
+		if(!this.headers["content-type"]) {
 			if(data && type==="object") {
-				this.headers["Content-Type"] = "application/json";
+				this.headers["content-type"] = "application/json";
 			} else if(["string","number","boolean"].indexOf(type)>=0) {
-				this.headers["Content-Type"] = "text/plain";
+				this.headers["content-type"] = "text/plain";
 			}
 		}
 		if(type==="object") { // arguments.length===1
@@ -105,6 +105,9 @@
 			if(!message.getHeader("messageId")) {
 				message.setHeader("messageId",parseInt((Math.random()+"").substring(2)));
 			}
+			if(typeof(document)!=="undefined" && document.location && !message.getHeader("referer")) {
+				message.setHeader("referer",document.location.href);
+			}
 			if(expect) {
 				let resolver,
 					rejector;
@@ -122,6 +125,7 @@
 			return result;
 		}
 		use(handler) {
+			handler.server = this;
 			const GeneratorFunction = function *(){}.constructor;
 			if(handler instanceof GeneratorFunction) {
 				this.handlers.push(handler);
@@ -141,8 +145,8 @@
 			if(typeof(Worker)!=="undefined") {
 				_Worker = Worker;
 			}
-			if(typeof(Worker)!=="undefined" && me.location instanceof _Worker) {
-				me.socket = me.location;
+			if(typeof(Worker)!=="undefined" && location instanceof _Worker) {
+				me.socket = location;
 			} else {
 				let _WebSocket;
 				if(ONSERVER) {
@@ -152,7 +156,7 @@
 					_WebSocket = WebSocket;
 				}
 				try {
-					me.socket = new _WebSocket("ws://" + me.location + (port ? ":"+port : ""),me.options.protocols);
+					me.socket = new _WebSocket("ws://" + location + (port ? ":"+port : ""),me.options.protocols);
 				} catch(e) {
 					me.onerror(e);
 				}
@@ -172,15 +176,20 @@
 			}
 			return new Promise((resolve,reject) => {
 				me.socket.onopen = function (event) {
+					if(typeof(document)!=="undefined" && document.location) {
+						const message = me.createResponse();
+						message.writeHead(200,{"referer":document.location.href});
+						message.end();
+					}
 					resolve();
 				};
-				if(typeof(Worker)!=="undefined" && me.location instanceof _Worker) {
+				if(typeof(Worker)!=="undefined" && location instanceof _Worker) {
 					resolve();
 				}
 				me.socket.onclose = function(event) {
-					me.listen(port,me.location);
+					me.listen(port,location);
 				}
-				console.log("Dexterous client listening on: ws://" + me.location + (port ? ":"+port : ""));
+				console.log("Dexterous client listening on: ws://" + location + (port ? ":"+port : ""));
 			});
 		}
 	}

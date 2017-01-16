@@ -27,11 +27,11 @@
 					ext = request.url.substring(i);
 				let type = moreTypes[ext];
 				if(type) {
-					response.setHeader("Content-Type",type);
+					response.setHeader("content-type",type);
 				} else {
 					type = types[ext];
 					if(type) {
-						response.setHeader("Content-Type",type);
+						response.setHeader("content-type",type);
 					}
 				}
 			}
