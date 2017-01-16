@@ -11,7 +11,7 @@ Dexterous will route requests made using the `ws:` protocol just as well as requ
 
 1) A bi-directional object proxy and handler so clients can offload computation to servers or servers can offload computation to clients.
 
-2) A more declaritive approach to URL routing of REST requests.
+2) A more declarative approach to URL routing of REST requests.
 
 3) Simple REST enablement for CURL requests.
 
