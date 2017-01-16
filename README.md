@@ -109,9 +109,7 @@ The function factory call signature is `(file)`.
 
 ### JavaScriptRunner
 
-`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript buil-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
-
-The function factory call signature is `(scope={},returnsError=false)`.
+`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError=false)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript buil-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
 
 Below is an example call:
 
