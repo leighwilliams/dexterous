@@ -10,8 +10,11 @@ Dexterous is an application middleware server similar to Koa.js or Node Express;
 Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Dexterous also comes with:
 
 1) A bi-directional object proxy and handler so clients can offload computation to servers or servers can offload computation to clients.
+
 2) A more declaritive approach to URL routing of REST requests.
+
 3) Simple REST enablement for CURL requests.
+
 4) A watch handler similar to Meteor so that any file changes on the server will force clients to reload pages when a page or resources it references change.
 
 # Installation
@@ -157,9 +160,13 @@ The handler expects a request with a body that may be a JSON object or a string 
 The body object must have some combination of these properties:
 
 1. `thisId` (optional) - If provided it can be used by a pre-handler which would set a `thisArg` property on `request.body` higher in the handler stack. The pre-handler would be responsible for parsing the request body if necessary.
+
 2. `thisArg` (optional) - Used as the context for get and set requests or function calls.
+
 3. `key` - The name of the key referring to a property value or function to use.
+
 4. `argumentsList` - An Array that is expected if the `key` refers to a function.
+
 5. `value` (optional) - if provided and the `key` refers to a property, the property is set to the value, othwerwise it is ignored. If no `value` is provided, the handler returns the current value of the property to the client.
 
 There is a convenience method that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server instances provide a method `<server>.createRemote(schema,socket)`. The returned object provides the methods `get`,`set`,`call`, and `apply` which it marshalls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
