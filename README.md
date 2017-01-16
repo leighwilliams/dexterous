@@ -1,9 +1,11 @@
 # dexterous
 A light weight isomorphic JavaScript middleware server for browser, WebWorkers, and NodeJS.
 
+
+
 # Introduction
 
-Dextrous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller (the core is less than 400 lines of code, 6K minimized or 2K gzipped). In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Dextrous also comes with:
+Dexterous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller (the core is less than 400 lines of code, 6K minimized or 2K gzipped). In addition, Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Dexterous also comes with:
 
 1) A bi-directional object proxy and handler so clients can offload computation to servers or servers can offload computation to clients.
 2) A more declaritive approach to URL routing of REST requests.
