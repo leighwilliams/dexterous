@@ -1,6 +1,6 @@
 (function() {
-	module.exports = function(alias,root) {
-		return function(request,response,next) {
+	module.exports = (alias,root) => {
+		return function virtual(request,response,next) {
 			const url = require("url"),
 				path = require("path"),
 				fs = require("fs");

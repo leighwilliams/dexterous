@@ -31,7 +31,18 @@ The sole dependency for Dexterous is the `ws` package.
 
 ## Servers
 
-Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched looks as follows:
+The call signature to create a server is `new Dexterous.Server(server,options={})`.
+
+`server` - Either a node http/https server or `null`, in which case an http server will be created.
+
+`options` can have two properties:
+
+1) `last` - A final handler to generate a response if no handler has created a `response.body`. The default sends a `404` for http/https or a `501` for ws requests.
+
+2) `timeout` - The timeout is milliseconds to wait for some handler to call end so a response can be sent. The default is 10000ms. A `503 Service Unavailable` is sent after the timeout.
+
+
+Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
 
 ```
 const Dexterous = require("dexterous"),
@@ -56,11 +67,33 @@ server.use(require("handlers/static")());
 server.listen(3000,"127.0.0.1");
 ```
 
-Handlers are free to modify the `response` and `request` objects. The property `response.headers.sent` will be true if a socket `response` has already been sent. Trying to send more data will result in an error.
+Handlers are free to modify the `response` and `request` objects. The property `response._headerSent` will be true if a `response` has already been sent. Trying to send more data will result in an error.
+
+Handlers must do one of the following:
+
+1) return `next`
+
+2) call `response.end`
+
+3) call `response.end` and return `next`
+
+If one of the above does not occur within the timeout period set in the server or client creation options (default 10000ms), then a `503 Service Unavailable` error will be sent.
+
+If the handler stack is completely processed and there is no `response.body` then either a `404 Not Found` or `501 Not Implemented` error will be returned by default. To override this, provide a hander as a value for `options.last`.
+
+In general the specification order of handlers should be:
+
+1) Request and response modifiers
+
+2) Dynamic content
+
+3) Static content
 
 ## Clients
 
-Clients are created in a manner similar to servers. Once connected to a server, the server can send requests to the client as though it were a peer server and they will be processed using any handlers installed on the client, e.g:
+Clients are created in a manner similar to servers. The call signature is `new Dexterous.Client(options={})`.
+
+Clients can have handler attached jsut like servers and take the same options object! Once connected to a server, the server can send requests to the client as though it were a peer server and they will be processed using any handlers installed on the client, e.g:
 
 ```
 const Dexterous = require("dexterous");
@@ -233,6 +266,7 @@ The built-ins are:
 ".gif": "image/gif",
 ".htm": "text/html",
 ".html": "text/html",
+".ico": "image/x-icon",
 ".jpg": "image/jpeg",
 ".jpeg": "image/jpeg",
 ".js": "application/javascript",
@@ -315,6 +349,8 @@ If your Dexteorus server does not seem to be responding but is up, there is prob
 To be written
 
 # Updates (reverse chronological order)
+
+2017-01-18 v0.2.0 - Replaced `response.headers.sent` with `response._headerSent` to be consistent with NodeJS. Added response timeout capability. Ensured final default handler sends proper headers. Revised watch handler to be more efficient. Added more examples.
 
 2017-01-16 v0.1.0 - Documentation and example updates. Added `watch` handler. Revised naming of Worker classes to be appended with "Client". Lowercased "content-type" to make consistent with NodJS approach to header processing.
 

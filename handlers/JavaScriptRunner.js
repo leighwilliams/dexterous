@@ -1,6 +1,6 @@
 (function() {
 	const f = (scope={},returnsError=false) => {
-		return (request,response,next) => {
+		return function JavaScriptRunner(request,response,next) {
 			if(["application/javascript","text/javascript"].indexOf(request.headers["content-type"])>=0 && typeof(request.body)==="string") {
 				try {
 					const result = new Function(request.body).call(scope);
@@ -8,7 +8,7 @@
 						response.writeHead(200,{"content-type":"application/json"});
 						response.end(result);
 					} else {
-						response.writeHead(200);
+						response.setHeader("status",200);
 					}
 				} catch(e) {
 					const msg = "Expression: '"+ request.body + "' caused an error!";

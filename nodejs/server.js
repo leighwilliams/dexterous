@@ -7,9 +7,7 @@
 				this.server = server;
 				try {
 					this.use(require("dexterous/handlers/virtual")("/dexterous","/node_modules/dexterous"));
-					//console.log("using package")
 				} catch(e) {
-					//console.log("using source")
 					this.use(require("../handlers/virtual.js")("/dexterous","/"));
 				}
 			}
@@ -17,33 +15,40 @@
 				const me = this;
 				if(!me.server) {
 					const protocol = (me.options.secure ? require("https") : require("http")),
-						url = require("url"),
-						path = require("path"),
-						fs = require("fs"),
-						WebSocket = require("ws"),
-						os = require("os"),
-						SocketServer = WebSocket.Server;
+						SocketServer = require("ws").Server;
 					me.server = protocol.createServer((request,response) => {
 						me.onmessage(request,response);
 					});
 					me.socket = new SocketServer({server:me.server});
+				}
+				if(typeof(me.options.last)==="function") {
+					me.use(me.options.last);
+				} else {
+					const url = require("url"),
+						path = require("path"),
+						fs = require("fs"),
+						os = require("os");
 					me.use(function *(request,response,next) {
 						yield next;
-						if(request.url) {
-							const uri = url.parse(request.url).pathname,
-							filename = path.join(process.cwd(),uri);
-							fs.readFile(filename,(err,data) => {
-								if(!err) {
-									response.writeHead(200);
-									response.end(data);
-								} else {
-									response.writeHead(404, "text/plain");
-									response.end("Not Found");
-								}
-							});
-						} else if(!response.getHeader("Status")){
-							response.writeHead(501, "text/plain");
-							response.end("Not Implemented");
+						if(!response._headerSent && request.headers["content-type"]) {
+							if(request.url) {
+								const uri = url.parse(request.url).pathname,
+								filename = path.join(process.cwd(),uri);
+								fs.readFile(filename,(err,data) => {
+									if(!err) {
+										response.writeHead(200);
+										response.end(data);
+									} else {
+										response.writeHead(404, {"content-type":"text/plain"});
+										response.end("Not Found");
+									}
+								});
+							} else {
+								response.writeHead(501, {"content-type":"text/plain"});
+								response.end("Not Implemented");
+							}
+						} else if(response.getHeader("status")===204) {
+							response.end();
 						}
 					});
 				}
@@ -60,10 +65,10 @@
 							} catch(e) {
 								// ignore;
 							}
-							const response = me.createResponse(message,ws);
-							me.onmessage(message,response);
-							if(message.headers.referer) {
-								ws.href = message.headers.referer;
+							// not just an ack with no return value
+							if(!(message.headers.status===204 && message.headers.responseToMessageId)) {
+								const response = me.createResponse(message,ws);
+								me.onmessage(message,response);
 							}
 						});
 						ws.on("error",me.onerror);

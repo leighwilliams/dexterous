@@ -1,6 +1,6 @@
 (function() {
 	const f = (scope={},returnsError) => {
-		return (request,response,next) => {
+		return function RemoteCall(request,response,next) {
 			let body = request.body,
 				type = typeof(body);
 			if(["application/javascript","text/javascript"].indexOf(request.headers["content-type"])>=0

@@ -1,5 +1,5 @@
 (function() {
-	const f = (request,response,next) => {
+	function JSONParser(request,response,next) {
 		if(request.headers["content-type"]==="application/json" && typeof(request.body)==="string") {
 			try {
 				request.body = JSON.parse(request.body);
@@ -10,8 +10,8 @@
 		return next;
 	};
 	if(typeof(module)==="object") {
-		module.exports = f;
+		module.exports = JSONParser;
 	} else {
-		this.JSONParser = f;
+		this.JSONParser = JSONParser;
 	}
 }).call(this);

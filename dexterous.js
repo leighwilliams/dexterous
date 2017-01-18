@@ -8,6 +8,7 @@
 			}
 			this.headers = { };
 			if(request && request.headers && request.headers.messageId) {
+				this.setHeader("status",204);
 				this.setHeader("responseToMessageId",request.headers.messageId);
 			}
 		}
@@ -19,7 +20,7 @@
 		}
 		writeHead(status,reason,headers) {
 			const me = this;
-			me.setHeader("Status",status);
+			me.setHeader("status",status);
 			if(reason && typeof(reason)==="object") {
 				headers = reason;
 			}
@@ -37,7 +38,7 @@
 		}
 	}
 	DexterousResponse.prototype.end = function(data,wait) { // outside class because "end" seems to be reserved in Edge
-		if(this.headers.sent) {
+		if(this._headerSent) {
 			throw new Error("response already sent");
 		}
 		const type = typeof(data);
@@ -54,8 +55,8 @@
 			this.write(data);
 		}
 		
-		if(!this.headers.Status) {
-			this.headers.Status = 200;
+		if(!this.headers.status) {
+			this.headers.status = 200;
 		}
 		return this.client.send(this,wait);
 	};
@@ -64,6 +65,7 @@
 			this.waiting = {}; // id map of messages waiting for response
 			this.handlers = []; // array of handlers added by this.use
 			this.options = options;
+			this.options.timeout || (this.options.timeout=10000)
 			this.onerror = (err) => {
 				console.log(err);
 			}
@@ -74,12 +76,24 @@
 		onmessage(request,response) {
 			const me = this,
 				iterators = [];
-			me.handlers.forEach((handler) => {
+			setTimeout(() => {
+				if(!response._headerSent) {
+					response.writeHead(503);
+					response.end("Service Unavailable");
+				}
+			},me.options.timeout);
+			me.handlers.forEach((handler,i) => {
+				if(me.options.traceLevel>0 && handler.name) {
+					console.log("Initializing",handler.name);
+				}
 				iterators.push(handler.call(me,request,response,true));
 			});
 			// go down the handler stack
 			let maxi = 0;
 			iterators.every((iterator,i) => {
+				if(me.options.traceLevel>0 && me.handlers[i].name) {
+					console.log("Calling",me.handlers[i].name);
+				}
 				const result = iterator.next();
 				if(result.value) {
 					maxi = i;
@@ -87,7 +101,10 @@
 				}
 			});
 			// go back up the handler stack;
-			iterators.slice(0,maxi+1).reverse().forEach((iterator) => {
+			iterators.slice(0,maxi+1).reverse().forEach((iterator,i) => {
+				if(me.options.traceLevel>0 && me.handlers[i].name) {
+					console.log("Continuing",me.handlers[i].name);
+				}
 				iterator.next();
 			});
 			// handle messages that were waiting for a response
@@ -115,13 +132,15 @@
 				message.setHeader("method","GET");
 				this.waiting[message.getHeader("messageId")] = resolver;
 			}
-
+			if(typeof(document)!=="undefined") {
+				message.setHeader("referer",document.location.href);
+			}
+			Object.defineProperty(message,"_headerSent",{value:true});
 			if(typeof(socket.postMessage)==="function") {
 				socket.postMessage(message);
 			} else {
 				socket.send(JSON.stringify(message));
 			}
-			message.headers.sent = true;
 			return result;
 		}
 		use(handler) {
@@ -130,7 +149,7 @@
 			if(handler instanceof GeneratorFunction) {
 				this.handlers.push(handler);
 			} else {
-				this.handlers.push(function *() { yield handler.call(undefined,...arguments); });
+				this.handlers.push(new Function("handler","return function *"+(handler.name ? handler.name : "")+"() { yield handler.call(undefined,...arguments); }")(handler));
 			}
 		}
 	}
@@ -168,17 +187,38 @@
 				} catch(e) {
 					// ignore;
 				}
-				const response = new DexterousResponse(me.socket,message);
-				me.onmessage(message,response); 
+				// not just and ack with no return value
+				if(!(message.headers.status===204 && message.headers.responseToMessageId)) {
+					const response = new DexterousResponse(me,message,me.socket);
+					me.onmessage(message,response); 
+				}
 			}
 			me.socket.onerror = function() { 
 				me.onerror(...arguments); 
+			}
+			if(typeof(me.options.last)==="function") {
+				me.use(me.options.last);
+			} else {
+				me.use(function *(request,response,next) {
+					yield next;
+					// need to address just acks and ignore generating 501 for them, make sure to do on server also
+					if(!response._headerSent){
+						if(response.getHeader("status")===204) {
+							response.setHeader("content-type","text/plain");
+							response.end("");
+						} else {
+							response.writeHead(501,{"content-type":"text/plain"});
+							response.end("Not Implemented");
+						}
+						
+					}
+				});
 			}
 			return new Promise((resolve,reject) => {
 				me.socket.onopen = function (event) {
 					if(typeof(document)!=="undefined" && document.location) {
 						const message = me.createResponse();
-						message.writeHead(200,{"referer":document.location.href});
+						message.writeHead(204,{"referer":document.location.href});
 						message.end();
 					}
 					resolve();

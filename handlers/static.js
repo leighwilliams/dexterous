@@ -2,8 +2,8 @@
 	const url = require("url"),
 		path = require("path"),
 		fs = require("fs");
-	module.exports = function(root="/") {
-		return function(request,response,next) {
+	module.exports = (root="/") => {
+		return function static(request,response,next) {
 			if(!request.url) {
 				return next;
 			}
