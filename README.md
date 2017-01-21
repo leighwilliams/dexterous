@@ -47,7 +47,7 @@ Developers familiar with Koa or Node Express will be able to make use of basic D
 ```
 const Dexterous = require("dexterous"),
 	server = new Dexterous.Server();
-server.use(require("handlers/static.js")());
+server.use(require("handlers/static")());
 server.listen(3000,"127.0.0.1");
 ```
 
@@ -128,7 +128,7 @@ response.end("hello client!");
 
 The `.end` method on a socket response has an extra argument indicating if the response represents a message that expects a return value. When set to true, the reponse header method gets set to `GET` and the method will return a Promise.
 
-When a server is recieving a request, a response object is automatically created. If a client wishes to send information to a server or a server wishes to send information to a client unsolicitied, then a response object needs to be created using `<clientOrServer>.createResponse()`. See the handler examples below.
+When a server receives a request, a response object is automatically created and passed to the handlers. If a client wishes to send information to a server or a server wishes to send information to a client unsolicitied, then a response object needs to be created using `<clientOrServer>.createResponse()`. See the handler examples below.
 
 ## Handlers
 
@@ -142,7 +142,7 @@ The function factory call signature is `(file)`.
 
 ### JavaScriptRunner
 
-`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError=false)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript buil-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
+`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError=false)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript built-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
 
 Below is an example call:
 
@@ -200,7 +200,10 @@ The body object must have some combination of these properties:
 
 5. `value` (optional) - if provided and the `key` refers to a property, the property is set to the value, othwerwise it is ignored. If no `value` is provided, the handler returns the current value of the property to the client.
 
-There is a convenience method that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server instances provide a method `<server>.createRemote(schema,socket)`. The returned object provides the methods `get`,`set`,`call`, and `apply` which it marshalls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
+There are two convenience methods that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server and client instances provide:
+
+1) `<server>.createRemote(schema,socket)` which returns and object with the methods `get`,`set`,`put`, `call` and `apply` which marshall calls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
+2) `<server>.createRemoteProxy(functionOrObject,schema,socket)` which operates at a higher level than `createRemote` to create mixed mode objects that can operate both locally and with remote calls. See the tutorial [Dexterous: Mixed Local And Remote Objects In Less Than 10 Lines](http://anywhichway.ghost.io/2017/01/21/dexterous-mixed-local-and-remote-objects/).
 
 ### RequestResponseLogger
 
@@ -288,7 +291,7 @@ The built-ins are:
 
 `virtual` is a function factory that returns a handler configured to map a URI prefix to a static directory. Dexterous uses this interally to map the root URI `/dextrous` to either the root directory or the `/node_modules/dexterous` directory.
 
-The call signature is `(alias,root)`. Both areguments are strings and should start with `/`.
+The call signature is `(alias,root)`. Both arguments are strings and should start with `/`.
 
 ### watch
 
@@ -296,7 +299,11 @@ The call signature is `(alias,root)`. Both areguments are strings and should sta
 
 Watch should be placed after a `DefaultFile` handler on the server. 
 
-The call signtaure is `watch(directory="/")`. The `directory` argument should start with a `/`.
+The call signtaure is `watch(server,directory="/")`. The `directory` argument should start with a `/`, e.g.
+
+```
+server.use(require("handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
+```
 
 The clients must be regular browser clients, not web workers, and must use a `JavaScriptRunner` that exposes the document object, e.g.:
 
@@ -306,7 +313,7 @@ client.use(JavaScriptRunner({document}));
 client.listen(3000,(window.location.hostname.length>0 ? window.location.hostname : "127.0.0.1"));
 ```
 
-See `examples/Watch`.
+See `examples/Watch` and the source for `/exampleServer.js`.
 
 
 # Advanced Use
