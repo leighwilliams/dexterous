@@ -5,6 +5,7 @@
 				const i = request.url.lastIndexOf(".");
 				if(i>0) {
 					const types = {
+							".css": "text/css",
 							".gzip": "application/gzip",
 							".gif": "image/gif",
 							".htm": "text/html",

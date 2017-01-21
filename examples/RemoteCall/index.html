@@ -18,7 +18,11 @@ const browserConsole = {
 	log() {
 		const el = document.getElementById("console");
 		for(let i=0;i<arguments.length;i++) {
-			el.innerHTML += (arguments[i] + " ");
+			let value = arguments[i];
+			if(value && typeof(value)==="object") {
+				value = JSON.stringify(value);
+			}
+			el.innerHTML += (value + " ");
 		}
 	}
 }
@@ -27,6 +31,7 @@ const client = new Dexterous.WorkerClient();
 client.use(JSONParser);
 client.use(RemoteCall({testFunction: (arg) => { return "I am the client testFunction result, the arg was " + arg + ".";}, testProperty: "testValue"},true));
 client.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
+	class TestClass { };
 	let remote = client.createRemote();
 	remote.get(undefined,"testProperty").then((result) => {
 		browserConsole.log("value of testProperty is",result,"<br>");
@@ -43,6 +48,10 @@ client.listen(3000,"127.0.0.1","/RemoteCall/worker.js").then(() => {
 	remote.apply(undefined,"testFunction",[1]).then((result) => {
 		browserConsole.log(result,"<br>");
 	});
+	remote.target = TestClass;
+	remote.call(undefined,"new","Joe").then((result) => {
+		browserConsole.log("Remotely created object:",result,"<br>");
+	})
 });
 
 </script>

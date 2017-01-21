@@ -1,7 +1,8 @@
 (function() {
-	const f = (scope={},returnsError) => {
+	const f = (scope={},returnsError,keyProperty="_id") => {
 		return function RemoteCall(request,response,next) {
-			let body = request.body,
+			let me = scope,
+				body = request.body,
 				type = typeof(body);
 			if(["application/javascript","text/javascript"].indexOf(request.headers["content-type"])>=0
 					&& request.headers.method==="GET"
@@ -14,11 +15,40 @@
 						return next;
 					}
 				}
-				let object = (body.thisArg ? body.thisArg : scope);
-				type = typeof(scope[request.body.key]);
-				if(type==="function") {
+				if(body.thisArg) {
+					me = body.thisArg;
+				} else {
+					if(me[body.className]) {
+						me = me[body.className];
+					}
+					if(me.instances && body.thisId && me.instances[body.thisId]) {
+						me = me.instances[body.thisId];
+					}
+				}
+				type = (body.key==="new" ? "function" : typeof(me[body.key]));
+				if(body.object) {
+					const result = Object.create(me.prototype);
+					result.constructor = me;
+					Object.keys(body.object).forEach((key) => {
+						result[key] = body.object[key];
+					});
+					if(body.thisId) {
+						result[keyProperty] = body.thisId;
+					}
+					me.instances || (me.instances={});
+					me.instances[result[keyProperty]] = result;
+					response.writeHead(200,{"content-type":"application/json"});
+					response.end(true);
+				} else if(type==="function") {
 					try {
-						const result = scope[request.body.key].apply(scope,request.body.argumentsList);
+						let result;
+						if(body.key==="new") {
+							result = new me(...body.argumentsList);
+							me.instances || (me.instances={});
+							me.instances[result[keyProperty]] = result;
+						} else {
+							result = me[body.key](...body.argumentsList);
+						}
 						response.writeHead(200,{"content-type":"application/json"});
 						response.end(result);
 					} catch(e) {
@@ -31,15 +61,16 @@
 							return next;
 						}
 					}
-					
-				} else if(typeof(request.body.value)!=="undefined") {
-					scope[request.body.key] = request.body.value;
-					response.writeHead(200,{"content-type":"application/json"});
-					response.end(true);
-				} else {
-					const result = scope[request.body.key];
-					response.writeHead(200,{"content-type":"application/json"});
-					response.end(result);
+				} else if(body.key) {
+					if(typeof(body.value)!=="undefined") {
+						me[body.key] = body.value;
+						response.writeHead(200,{"content-type":"application/json"});
+						response.end(true);
+					} else {
+						const result = me[body.key];
+						response.writeHead(200,{"content-type":"application/json"});
+						response.end(result);
+					}
 				}
 				return;
 			}

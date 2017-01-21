@@ -3,6 +3,9 @@ logs
 *.log
 npm-debug.log*
 
+# tutorials
+datasync*.*
+
 # Runtime data
 pids
 *.pid

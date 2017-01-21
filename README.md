@@ -342,13 +342,15 @@ See the `examples` directory.
 
 # Debugging
 
-If your Dexteorus server does not seem to be responding but is up, there is probably a handler which is failing to return next when it needs to after discovering it does not apply to a request that has been routed to it.
+If your Dexteorus server does not seem to be responding but is up, there is probably a handler which is failing to return 'next' when it needs to after discovering it does not apply to a request that has been routed to it.
 
 # API
 
 To be written
 
 # Updates (reverse chronological order)
+
+2017-01-21 v0.2.1 - Enhanced RemoteCall.
 
 2017-01-18 v0.2.0 - Replaced `response.headers.sent` with `response._headerSent` to be consistent with NodeJS. Added response timeout capability. Ensured final default handler sends proper headers. Revised watch handler to be more efficient. Added more examples.
 
