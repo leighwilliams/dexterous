@@ -203,6 +203,7 @@ The body object must have some combination of these properties:
 There are two convenience methods that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server and client instances provide:
 
 1) `<server>.createRemote(schema,socket)` which returns and object with the methods `get`,`set`,`put`, `call` and `apply` which marshall calls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
+
 2) `<server>.createRemoteProxy(functionOrObject,schema,socket)` which operates at a higher level than `createRemote` to create mixed mode objects that can operate both locally and with remote calls. See the tutorial [Dexterous: Mixed Local And Remote Objects In Less Than 10 Lines](http://anywhichway.ghost.io/2017/01/21/dexterous-mixed-local-and-remote-objects/).
 
 ### RequestResponseLogger
