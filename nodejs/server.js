@@ -17,7 +17,14 @@
 					const protocol = (me.options.secure ? require("https") : require("http")),
 						SocketServer = require("ws").Server;
 					me.server = protocol.createServer((request,response) => {
-						me.onmessage(request,response);
+						let body = [];
+						request.on('data', function(chunk) {
+						  body.push(chunk);
+						}).on('end', function() {
+						  request.body = Buffer.concat(body).toString();
+						  me.onmessage(request,response);
+						});
+						
 					});
 					me.socket = new SocketServer({server:me.server});
 				}

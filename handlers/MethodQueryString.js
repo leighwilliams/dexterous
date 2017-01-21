@@ -6,8 +6,8 @@
 			if(request.url) {
 				let parsed = url.parse(querystring.unescape(request.url),true);
 				if(parsed.query.method) {
-					request.headers.method = parsed.query.method.toUpperCase();
-					if(request.headers.method==="POST" || request.headers.method==="PUT") {
+					request.method = parsed.query.method.toUpperCase();
+					if(request.method==="POST" || request.method==="PUT") {
 						try {
 							request.body = JSON.parse(parsed.query.body);
 						} catch(e) {

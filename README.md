@@ -358,6 +358,8 @@ To be written
 
 # Updates (reverse chronological order)
 
+2017-01-21 v0.2.3 - Improved REST and URL handling.
+
 2017-01-21 v0.2.2 - Documentation updates.
 
 2017-01-21 v0.2.1 - Enhanced RemoteCall.

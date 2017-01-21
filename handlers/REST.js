@@ -5,15 +5,15 @@
 		return function REST(request,response,next) {
 			if(request.url) {
 				let uri = url.parse(request.url).pathname,
-				parts = uri.split("/"); // will use later for wildcard matching
+					parts = uri.split("/").filter((item) => item!==""), // will use later for wildcard matching
+					alturi;
 				let id;
 				if(uri[uri.length-1]!=="/") {
 					id = parts[parts.length-1];
-					parts = parts.slice(0,parts.length-1);
-					uri = parts.join("/") + "/";
+					alturi = parts.slice(0,parts.length-1).join("/") + "/";
 				}
-				if(uri===path) {
-					const method = (request.headers.method ? request.headers.method.toLowerCase() : "get");
+				if(uri===path || alturi===path) {
+					const method = (request.method ? request.method.toLowerCase() : "get");
 					let result;
 					if(restHandlers[method]) {
 						result = restHandlers[method](id,request,response,next);
