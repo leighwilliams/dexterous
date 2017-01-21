@@ -15,7 +15,7 @@ Dexterous will route requests made using the `ws:` protocol just as well as requ
 
 3) Simple REST enablement for CURL requests.
 
-4) A watch handler similar to Meteor so that any file changes on the server will force clients to reload pages when a page or resources it references change.
+4) A watch handler similar to Meteor and Ember so that any file changes on the server will force clients to reload pages when a page or resources it references change.
 
 # Installation
 
@@ -45,9 +45,9 @@ The call signature to create a server is `new Dexterous.Server(server,options={}
 Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
 
 ```
-const Dexterous = require("dexterous"),
+const Dexterous = require("dexterous/dexterous"),
 	server = new Dexterous.Server();
-server.use(require("handlers/static")());
+server.use(require("dexterous/handlers/static")());
 server.listen(3000,"127.0.0.1");
 ```
 
@@ -60,10 +60,10 @@ function (request,response,next) { ... [return next]; }
 If a generator function is used, then the portion before the `yield` is called on the way down the handler stack and the portion after the `yield` is called as the handler stack unwinds. The handler `RequestResponseLogger` uses this approach to log inbound requests as they come in and outbound responses immediately after they are sent, even though it is the first handler below:
 
 ```
-const Dexterous = require("dexterous"),
+const Dexterous = require("dexterous/dexterous"),
 	server = new Dexterous.Server();
-server.use(require("handlers/RequestResponseLogger"));
-server.use(require("handlers/static")());
+server.use(require("dexterous/handlers/RequestResponseLogger"));
+server.use(require("dexterous/handlers/static")());
 server.listen(3000,"127.0.0.1");
 ```
 
@@ -96,9 +96,9 @@ Clients are created in a manner similar to servers. The call signature is `new D
 Clients can have handler attached jsut like servers and take the same options object! Once connected to a server, the server can send requests to the client as though it were a peer server and they will be processed using any handlers installed on the client, e.g:
 
 ```
-const Dexterous = require("dexterous");
+const Dexterous = require("dexterous/dexterous");
 const client = new Dexterous.Client();
-client.use(require("handlers/RequestResponseLogger"));
+client.use(require("dexterous/handlers/RequestResponseLogger"));
 client.listen(3000,"127.0.0.1");
 ```
 
@@ -163,7 +163,7 @@ See the `examples\JavaScriptRunner` directory.
 The below will first print "string" and then print "object".
 
 ```
-const Dexterous = require("dexterous.js");
+const Dexterous = require("dexterous/dexterous");
 const server = new Dexterous.Server();
 server.listen(3000,"127.0.0.1").then(() => {
 	let message = server.createResponse();
@@ -172,7 +172,7 @@ server.listen(3000,"127.0.0.1").then(() => {
 });
 const client = new Dexterous.Client();
 client.use(function *(request,response,next) { console.log(typeof(request.body)); yield next; console.log(typeof(request.body)); });
-client.use(require("handlers/JSONParser"));
+client.use(require("dexterous/handlers/JSONParser"));
 client.listen(3000,"127.0.0.1");
 ```
 
@@ -303,7 +303,7 @@ Watch should be placed after a `DefaultFile` handler on the server.
 The call signtaure is `watch(server,directory="/")`. The `directory` argument should start with a `/`, e.g.
 
 ```
-server.use(require("handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
+server.use(require("dexterous/handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
 ```
 
 The clients must be regular browser clients, not web workers, and must use a `JavaScriptRunner` that exposes the document object, e.g.:
@@ -357,6 +357,8 @@ If your Dexteorus server does not seem to be responding but is up, there is prob
 To be written
 
 # Updates (reverse chronological order)
+
+2017-01-21 v0.2.2 - Documentation updates.
 
 2017-01-21 v0.2.1 - Enhanced RemoteCall.
 
