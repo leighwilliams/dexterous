@@ -25,7 +25,7 @@ The core files `dexterous.js` and `remote.js` can be used directly in a browser 
 
 There are a number of utility handlers in the `handler` directory, most of which can be used just as well in a browser as in a NodeJS application. Although, there are a few, e.g. `static.js` that only make sense on the recieving end of `http` requests.
 
-The sole dependency for Dexterous is the `ws` package.
+The dependencies for Dexterous are `ws`, `ultron`, `minimist`, `watch`, `options`, `merge`, and `exec-sh`.
 
 # Basic Use
 
