@@ -24,6 +24,7 @@
 								const message = server.createResponse(undefined,client);
 								message.writeHead(200,{"content-type": "application/javascript"});
 								message.end("document.location.reload(true);");
+								console.log("document.location.reload(true);")
 							}
 						}
 					});
@@ -39,7 +40,6 @@
 						const uri = url.parse(request.url).pathname;
 						server.requests[request.headers.referer][uri] = true;
 					}
-
 				}
 				return next;
 			}

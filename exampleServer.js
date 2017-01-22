@@ -4,7 +4,6 @@ const Dexterous = require("./dexterous"),
 server.use(require("./handlers/MethodQueryString")());
 server.use(require("./handlers/URLContentType")());
 server.use(require("./handlers/JSONParser"));
-server.use(require("./handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
 
 // return dynamic content
 server.use(require("./handlers/JavaScriptRunner")({},true));
@@ -39,6 +38,7 @@ server.use(require("./handlers/REST")("/REST/test/",{
 
 // handle static content
 server.use(require("./handlers/DefaultFile")("index.html"));
+server.use(require("./handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
 server.use(require("./handlers/static")("/examples"));
 
 server.listen(3000,"127.0.0.1").then(() => {
