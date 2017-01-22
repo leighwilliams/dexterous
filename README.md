@@ -29,6 +29,10 @@ The dependencies for Dexterous are `ws`, `ultron`, `minimist`, `watch`, `options
 
 # Basic Use
 
+## Examples
+
+It is encouraged to review the examples in `/examples` by running `node exampleServer` and then loading `http://127.0.0.1:3000/` in a browser.
+
 ## Servers
 
 The call signature to create a server is `new Dexterous.Server(server,options={})`.
