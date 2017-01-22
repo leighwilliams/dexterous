@@ -129,7 +129,7 @@
 				let resolver,
 					rejector;
 				result = new Promise((resolve,reject) => { resolver=resolve; rejector=reject; });
-				message.setHeader("method","GET");
+				message.method="GET";
 				this.waiting[message.getHeader("messageId")] = resolver;
 			}
 			if(typeof(document)!=="undefined") {

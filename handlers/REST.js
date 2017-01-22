@@ -10,7 +10,7 @@
 				let id;
 				if(uri[uri.length-1]!=="/") {
 					id = parts[parts.length-1];
-					alturi = parts.slice(0,parts.length-1).join("/") + "/";
+					alturi = "/" + parts.slice(0,parts.length-1).join("/") + "/";
 				}
 				if(uri===path || alturi===path) {
 					const method = (request.method ? request.method.toLowerCase() : "get");

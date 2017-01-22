@@ -5,7 +5,7 @@
 				body = request.body,
 				type = typeof(body);
 			if(["application/javascript","text/javascript"].indexOf(request.headers["content-type"])>=0
-					&& request.headers.method==="GET"
+					&& request.method==="GET"
 					&& request.body
 					&& (type==="object" || type==="string")) {
 				if(type==="string") {
