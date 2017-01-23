@@ -362,6 +362,8 @@ To be written
 
 # Updates (reverse chronological order)
 
+2017-01-23 v0.2.6 - Added more intelligence to REST to automatically reject poolry formed REST requests. Added a generic Headers handler to add default headers.
+
 2017-01-22 v0.2.5 - Watch service in `exampleServer.js` now restored.
 
 2017-01-21 v0.2.4 - v0.2.3 broke parts of REST handling. Now fixed. `watch` capability now broken.

@@ -82,6 +82,9 @@
 					response.end("Service Unavailable");
 				}
 			},me.options.timeout);
+			if(request.method) {
+				request.method = request.method.toLowerCase();
+			}
 			me.handlers.forEach((handler,i) => {
 				if(me.options.traceLevel>0 && handler.name) {
 					console.log("Initializing",handler.name);

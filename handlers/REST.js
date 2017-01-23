@@ -15,12 +15,15 @@
 				if(uri===path || alturi===path) {
 					const method = (request.method ? request.method.toLowerCase() : "get");
 					let result;
-					if(restHandlers[method]) {
-						result = restHandlers[method](id,request,response,next);
-					}
-					if(result!==next) {
-						response.writeHead(404,{"content-type":"text/plain"});
-						response.end("Not Found");
+					if((method==="get" || method==="delete" || ((method==="put" || method==="post") && !request.body)) && !id) {
+						response.writeHead(400);
+						response.end("Bad Request");
+					} else if(restHandlers[method]) {
+						const result = restHandlers[method](id,request,response,next);
+						if(!result && !response._headerSent) {
+							return next;
+						}
+						return result;
 					}
 				}
 			}

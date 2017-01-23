@@ -6,8 +6,8 @@
 			if(request.url) {
 				let parsed = url.parse(querystring.unescape(request.url),true);
 				if(parsed.query.method) {
-					request.method = parsed.query.method.toUpperCase();
-					if(request.method==="POST" || request.method==="PUT") {
+					request.method = parsed.query.method.toLowerCase();
+					if(request.method==="post" || request.method==="put") {
 						try {
 							request.body = JSON.parse(parsed.query.body);
 						} catch(e) {
@@ -18,7 +18,7 @@
 						}
 					}
 				} else {
-					parsed.query.method = "GET";
+					parsed.query.method = "get";
 				}
 			}
 			return next;

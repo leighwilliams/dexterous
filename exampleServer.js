@@ -4,6 +4,7 @@ const Dexterous = require("./dexterous"),
 server.use(require("./handlers/MethodQueryString")());
 server.use(require("./handlers/URLContentType")());
 server.use(require("./handlers/JSONParser"));
+server.use(require("./handlers/Headers")({"Access-Control-Allow-Origin":"*"}));
 
 // return dynamic content
 server.use(require("./handlers/JavaScriptRunner")({},true));
