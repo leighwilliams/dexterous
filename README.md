@@ -362,6 +362,8 @@ To be written
 
 # Updates (reverse chronological order)
 
+2017-01-29 v0.2.7 - Added Content-length to headers via handlers.
+
 2017-01-23 v0.2.6 - Added more intelligence to REST to automatically reject poolry formed REST requests. Added a generic Headers handler to add default headers.
 
 2017-01-22 v0.2.5 - Watch service in `exampleServer.js` now restored.

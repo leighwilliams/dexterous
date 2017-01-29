@@ -12,6 +12,7 @@
 				const filename = path.join(process.cwd()+uri.replace(alias,root));
 				try {
 					const data = fs.readFileSync(filename);
+					response.setHeader("Content-length",Buffer.byteLength(data));
 					response.writeHead(200);
 					response.end(data);
 				} catch(e) {
