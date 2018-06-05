@@ -1,0 +1,16 @@
+<html>
+<body>
+<h2>Dexterous Browser Worker Demo</h2>
+
+<a href="javascript:click()">Access browser worker response</a>
+
+</body>
+<script src="dexterous-worker.js"></script>
+<script src="app.js"></script>
+<script>
+function click() {
+	const worker = new DexterousWorker("app.js");
+	worker.handle({text:"hello"},value => alert(value.text));
+}
+</script>
+</html>

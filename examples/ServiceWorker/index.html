@@ -1,0 +1,15 @@
+<html>
+<body>
+<h2>Dexterous Service Worker Demo</h2>
+
+<a href="hello">Access service worker response</a>
+<br>
+<a href="foo">Access Not Found</a>
+
+</body>
+<script src="dexterous-service-worker.js"></script>
+<script>
+const app = new DexterousServiceWorker("app.js");
+app.listen();
+</script>
+</html>

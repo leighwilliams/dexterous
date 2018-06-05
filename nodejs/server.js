@@ -31,7 +31,7 @@
 							});
 						}
 					});
-					me.socket = new SocketServer({server:me.server});
+					me.socket = new SocketServer({server:me.server,clientTracking:true});
 				}
 				if(typeof(me.options.last)==="function") {
 					me.use(me.options.last);

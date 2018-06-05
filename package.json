@@ -1,13 +1,17 @@
 {
   "name": "dexterous",
-  "version": "0.2.7",
-  "description": "A light weight isomorphic JavaScript middleware server for the browser, WebWorkers, and NodeJS.",
+  "version": "v1.0.1a",
+  "description": "A light weight isomorphic JavaScript middleware server for the Browser, Web Workers, Service Workers, NodeJS and Cloudflare.",
   "engines": {
     "node": "7.3.0"
   },
   "license": "MIT",
   "scripts": {
-    "exampleServer": "node exampleServer.js"
+  	"BrowserServer": "node examplesapp.js BrowserServer",
+  	"HttpServer": "node ./examples/HttpServer/app.js",
+    "ServiceWorker": "node examplesapp.js ServiceWorker",
+    "Worker": "node examplesapp.js Worker",
+    "prepare": "cp ./src/* ./dist"
   },
   "repository": {
     "type": "git",
@@ -15,9 +19,7 @@
   },
   "keywords": [
     "Koa",
-    "Express",
-    "Meteor",
-    "Ember"
+    "Express"
   ],
   "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
   "bugs": {
@@ -25,10 +27,13 @@
   },
   "homepage": "https://github.com/anywhichway/dexterous#readme",
   "devDependencies": {
-    "browserify": "^13.3.0"
+    "browserify": "^13.3.0",
+    "express-markdown": "0.0.6",
+    "curl": "^0.1.4",
+    "webpack": "^4.10.2"
   },
   "dependencies": {
-    "watch": "^1.0.1",
-    "ws": "^1.1.1"
+    "path-to-regexp": "^2.2.1",
+    "wsfetch": "0.0.2"
   }
 }

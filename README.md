@@ -1,366 +1,323 @@
-# dexterous
-A light weight isomorphic JavaScript middleware server for browser, WebWorkers, and NodeJS.
+# dexterous v1.0.1a
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1daac1a5b69c44f68b4dc36713a4acc7)](https://www.codacy.com/app/syblackwell/dexterous?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=anywhichway/dexterous&amp;utm_campaign=Badge_Grade)
+`Dexterous` is a light weight isomorphic JavaScript middleware server for browser pages, Workers, ServiceWorkers, NodeJS and Cloudflare.
+
+v1.0.x is a complete re-write of v0.2.x to simplify usage and optimize performance. As a result, some functionality available in the v0.2.x version is not yet available.
 
 # Introduction
 
-Dexterous is an application middleware server similar to Koa.js or Node Express; however, it was designed from the start to run in either a browser or NodeJS server environment and be smaller. The client core is less than 400 lines of code, 6K minimized or 2K gzipped. The server has minimal dependencies, i.e. `ws` and `watch` and their dependencies. 
+`Dexterous` is similar to `Koa.js` or `Node Express`; however, it was designed from the start to be isomoprhic and run in any of a web page, a Worker, a SharedWorker, a ServiceWorker or NodeJS server environment and be smaller. 
 
-Dexterous will route requests made using the `ws:` protocol just as well as requests made using the `http:` protocol. Dexterous also comes with:
+The original version was rather complex to use. It has now been made smaller and simpler and tested on the [Cloudflare CDN](https://www.cloudflare.com). That's right, you can actually run a `Dexterous` app server on the CDN edge! In fact, `Dexterous` normalizes the calling interface across all the environments it supports.
 
-1) A bi-directional object proxy and handler so clients can offload computation to servers or servers can offload computation to clients.
+The core is less than 200 lines of code and just 1k gzipped with no dependencies.  
 
-2) A more declarative approach to URL routing of REST requests.
-
-3) Simple REST enablement for CURL requests.
-
-4) A watch handler similar to Meteor and Ember so that any file changes on the server will force clients to reload pages when a page or resources it references change.
+Note, small does not mean less powerful. In fact, we have even included an app server, `DexterousExpress`, that uses nothing but `Dexterous` itself to emulate substantial portions of Express!
 
 # Installation
 
-npm install dexterous
-
-The core files `dexterous.js` and `remote.js` can be used directly in a browser or in NodeJS applications. Files in the `browser` directory can be used direclty in a web browser. Files in the `nodejs` directory can be used in NodeJS applications.
-
-There are a number of utility handlers in the `handler` directory, most of which can be used just as well in a browser as in a NodeJS application. Although, there are a few, e.g. `static.js` that only make sense on the recieving end of `http` requests.
-
-The dependencies for Dexterous are `ws`, `ultron`, `minimist`, `watch`, `options`, `merge`, and `exec-sh`.
+`npm install dexterous`
 
 # Basic Use
 
 ## Examples
 
-It is encouraged to review the examples in `/examples` by running `node exampleServer` and then loading `http://127.0.0.1:3000/` in a browser.
-
-## Servers
-
-The call signature to create a server is `new Dexterous.Server(server,options={})`.
-
-`server` - Either a node http/https server or `null`, in which case an http server will be created.
-
-`options` can have two properties:
-
-1) `last` - A final handler to generate a response if no handler has created a `response.body`. The default sends a `404` for http/https or a `501` for ws requests.
-
-2) `timeout` - The timeout is milliseconds to wait for some handler to call end so a response can be sent. The default is 10000ms. A `503 Service Unavailable` is sent after the timeout.
-
-
-Developers familiar with Koa or Node Express will be able to make use of basic Dexterous capability with very little effort. The simplest Dexterous NodeJS application is a server for delivering files from the directory tree in which the app is launched and looks as follows:
-
-```
-const Dexterous = require("dexterous/dexterous"),
-	server = new Dexterous.Server();
-server.use(require("dexterous/handlers/static")());
-server.listen(3000,"127.0.0.1");
-```
-
-Handlers have either of the following signatures:
-
-```
-function *(request,response,next) { ... [yield next ...] } // [ ] indicates optional code
-function (request,response,next) { ... [return next]; }
-```
-If a generator function is used, then the portion before the `yield` is called on the way down the handler stack and the portion after the `yield` is called as the handler stack unwinds. The handler `RequestResponseLogger` uses this approach to log inbound requests as they come in and outbound responses immediately after they are sent, even though it is the first handler below:
-
-```
-const Dexterous = require("dexterous/dexterous"),
-	server = new Dexterous.Server();
-server.use(require("dexterous/handlers/RequestResponseLogger"));
-server.use(require("dexterous/handlers/static")());
-server.listen(3000,"127.0.0.1");
-```
-
-Handlers are free to modify the `response` and `request` objects. The property `response._headerSent` will be true if a `response` has already been sent. Trying to send more data will result in an error.
-
-Handlers must do one of the following:
-
-1) return `next`
-
-2) call `response.end`
-
-3) call `response.end` and return `next`
-
-If one of the above does not occur within the timeout period set in the server or client creation options (default 10000ms), then a `503 Service Unavailable` error will be sent.
-
-If the handler stack is completely processed and there is no `response.body` then either a `404 Not Found` or `501 Not Implemented` error will be returned by default. To override this, provide a hander as a value for `options.last`.
-
-In general the specification order of handlers should be:
-
-1) Request and response modifiers
-
-2) Dynamic content
-
-3) Static content
-
-## Clients
-
-Clients are created in a manner similar to servers. The call signature is `new Dexterous.Client(options={})`.
-
-Clients can have handler attached jsut like servers and take the same options object! Once connected to a server, the server can send requests to the client as though it were a peer server and they will be processed using any handlers installed on the client, e.g:
-
-```
-const Dexterous = require("dexterous/dexterous");
-const client = new Dexterous.Client();
-client.use(require("dexterous/handlers/RequestResponseLogger"));
-client.listen(3000,"127.0.0.1");
-```
-
-Similar client creation code can be used in a browser:
-
-```
-<script type="text/javascript" src="/dexterous/dexterous.js"></script>
-<script type="text/javascript" src="/dexterous/handlers/RequestResponseLogger.js"></script>
-<script>
-const client = new Dexterous.Client();
-client.use(RequestResponseLogger));
-client.listen(3000,"127.0.0.1");
-</script>
-```
-
-If the following were invoked on a server, then the `client` would log the request and response, although no response would be sent back to the server because the client is only configured to log requests.
-
-```
-const response = server.createResponse();
-response.writeHeader(200); // the content type will default to either text/plain or application/json depending on what is written
-response.end("hello client!");
-```
-
-## Response Object
-
-`Response` objects will either be the response instance created by the http server around which a Dexterous application is wrapped or a special response instance that provides the same calling interface. As a result, responses to requests over the `ws:` protocol can be treated in a manner similar to those over `http:`.
-
-The `.end` method on a socket response has an extra argument indicating if the response represents a message that expects a return value. When set to true, the reponse header method gets set to `GET` and the method will return a Promise.
-
-When a server receives a request, a response object is automatically created and passed to the handlers. If a client wishes to send information to a server or a server wishes to send information to a client unsolicitied, then a response object needs to be created using `<clientOrServer>.createResponse()`. See the handler examples below.
-
-## Handlers
-
-All built-in handlers are provided in files of the same name as the handler in the directory `handlers`.
-
-### DefaultFile
-
-`DefaultFile` is a function factory that returns a handler configured to re-write the requested URL if a URL terminated with a `/` is requested. It will also re-write a `referer` in a header for socket client requests.
-
-The function factory call signature is `(file)`.
-
-### JavaScriptRunner
-
-`JavaScriptRunner` is a function factory that returns a handler. Its signature is `(scope={},returnsError=false)`. Requests recieved with a `content-type` header of `application/javascript` or `text/javascript` will have their body evaluated in the scope provided. Providing a `null` scope, will cause evaluation in the global scope ... which could be very useful but also very risky. Providing no scope, i.e. `undefined` will default to `{}` which will provide access to the console and typical JavaScript built-ins like Math. The below code will log the number 100 to the console, assuming the server to which the client is attached is using a `JavaScriptRunner`.
-
-Below is an example call:
-
-```
-let message = client.createResponse();
-	message.writeHead(200,{"content-type":"application/javascript"});
-	message.end("return 10 * 10",true).then((result) => {
-		browserConsole.log(result);
-	});
-```
-
-See the `examples\JavaScriptRunner` directory.
-
-### JSONParser
-
-`JSONParser` will parse and replace `request.body` as JSON when the `request.header["content-type"]==="application/json"`. If the existing body can't be parsed, then it is not changed. `JSONParser` should always be used on the receiving end of services using `JavaScriptRunner` so that the responses can be parsed, i.e. if the server uses `JavaScriptRunner` then the client should use `JSONParser` and if the client uses `JavaScriptRunner` then the server should use `JSONParser`.
-
-The below will first print "string" and then print "object".
-
-```
-const Dexterous = require("dexterous/dexterous");
-const server = new Dexterous.Server();
-server.listen(3000,"127.0.0.1").then(() => {
-	let message = server.createResponse();
-		message.writeHead(200,{"content-type":"application/JSON"});
-		message.end({message:"Hello!",serverTime:Date.now()}); // this will be stringified for transit
-});
-const client = new Dexterous.Client();
-client.use(function *(request,response,next) { console.log(typeof(request.body)); yield next; console.log(typeof(request.body)); });
-client.use(require("dexterous/handlers/JSONParser"));
-client.listen(3000,"127.0.0.1");
-```
-
-### MethodQueryString
-
-`MethodQueryString` if a function factory returning a handler that looks for a `method` query parameter and replaces the request.headers.method with the value. The value is upper cased during processing. `MethodQueryString` is useful when an entirely client based CURL usable REST API is needed without the complexities of JavaScript XHR or other request marshaling approaches. If the method is PUT or POST, a `body` parameter will also be sought and parsed as JSON to replace the `request.body`. The JSON in the query string MUST use normal double quotes, e.g. `{"name":"Joe"}` not `{'name':'Joe'}` or `{\"name\":\"Joe\"}`.
-
-The `MethodQueryString` function factory takes one boolean argument. If `true` body parsing errors are ignored. If `false` (the default) the response is populated with a 400 status code and a body that says "Bad Request"; however, handler processing continues in case a subsequent handler can address the request.
-
-### RemoteCall
-
-`RemoteCall` is a function factory that returns a handler which responds to remote call requests with non-null content type of "application/javascript" and method GET. The signature is `(scope,returnsError)`. The `scope` should be the default execution scope for requests. This may be overridden by providing a `thisArg` property values as described below.
-
-The handler expects a request with a body that may be a JSON object or a string parseable as a JSON object. The handler `JSONParser` is not required, and in fact would do nothing since the content type is not "application/json". The response content type will always be "application/json".
-
-The body object must have some combination of these properties:
-
-1. `thisId` (optional) - If provided it can be used by a pre-handler which would set a `thisArg` property on `request.body` higher in the handler stack. The pre-handler would be responsible for parsing the request body if necessary.
-
-2. `thisArg` (optional) - Used as the context for get and set requests or function calls.
-
-3. `key` - The name of the key referring to a property value or function to use.
-
-4. `argumentsList` - An Array that is expected if the `key` refers to a function.
-
-5. `value` (optional) - if provided and the `key` refers to a property, the property is set to the value, othwerwise it is ignored. If no `value` is provided, the handler returns the current value of the property to the client.
-
-There are two convenience methods that can be loaded from `/dexterous/remote.js`. This will enhance Dexterous so that all server and client instances provide:
-
-1) `<server>.createRemote(schema,socket)` which returns and object with the methods `get`,`set`,`put`, `call` and `apply` which marshall calls into the appropriate form for dispatch by the client. `<server>.createRemote(schema,socket)` does not currently uses the `schema` argument to ensure all requests to be made of the server are valid. It is reserved for future use. See the example `examples/RemoteCall`.
-
-2) `<server>.createRemoteProxy(functionOrObject,schema,socket)` which operates at a higher level than `createRemote` to create mixed mode objects that can operate both locally and with remote calls. See the tutorial [Dexterous: Mixed Local And Remote Objects In Less Than 10 Lines](http://anywhichway.ghost.io/2017/01/21/dexterous-mixed-local-and-remote-objects/).
-
-### RequestResponseLogger
-
-`RequestResponseLogger` simply logs the request body on the way down the handler stack and the response on the way back up. Usually placed as the first handler.
-
-### REST
-
-`REST` is a function factory that returns a REST handler. The approach is more decalaritive and concise than that taken by Express or Koa. All responders are clustered together as part of a single object. Additionally, a separate router object does not have to be created. 
-
-The signature for the factory is `(path,{<method>:(id,request,response,next)[,...]})`. The useful values for `<method>` are `get`,`put`,`post`,`delete`. The `id` argument to the handler is parsed from the url of the request.
-
-Not writing a response will cause the server to fall through to a default `404 Not Found` or `400 Bad Request` error.
-
-The below exampe is drawn from code in `exampleServer.js`:
-
-```
-server.use(require("./handlers/REST")("/REST/test/",{
-	get: (id,request,response,next) => {
-		if(typeof(id)!=="undefined") {
-			response.end("GET with id: " + id);
-		}
-	},
-	post: (id,request,response,next) => {
-		if(request.body) {
-			if(id) {
-				request.body.id = id;
-				response.end("POST with id: " + id  + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
-			} else { 
-				request.body.id = Math.round(Math.random()*1000);
-				response.end("POST without id (server assigned)" + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
-			}
-		}
-	},
-	put: (id,request,response,next) => {
-		if(request.body && id) {
-			response.end("PUT with id: " + id  + (request.body ? " and with body " + JSON.stringify(request.body) : ""));
-		}
-	},
-	delete: (id,request,response,next) => {
-		if(id) {
-			response.end("DELETE with id: " + id);
-		}
+You are encouraged to review the examples in `/examples/<exampleName>` by changing to the directory where Dexterous is installed, typically `./_node_modules/dexterous` and running `npm run <exampleName>` and then loading `http://localhost:8080/index.html` in a browser. If you have a port conflict, you can add `-- <port>` as a final argument.
+
+## Writing A Server
+
+A server is simply a listener that dispatches incoming events to a series of middleware. Writing a server is done in a manner similar to `Express`. Basic `Dexterous` servers make no assumptions about the types of events passed in. For familiarity, we will start by using a sub-class called `DexterousHttpServer`, which is very similar to `Express` and assumes an event consists of a `request` and a `response`. Below is a server that always returns `Hello`.
+
+```javascript
+const DexterousHttpServer = require("dexterous-http-server"),
+	app = new DexterousHttpServer();
+app.use(
+	value => {
+		const {response} = value;
+		response.end("Hello");
 	}
-}));
+)
+app.listen(8080);
 ```
 
-### static
+There are several things to note:
 
-`static` is a function factory that returns a handler configured to load files out of the directory tree provided as the argument. If a requested URL is not found, `static` will yield to the next handler. Dexterous has a built in handler that will return 404 - Not Found if http requests remain unhandled by the time the handler stack has been fully processed.
+1) Unlike `Express`, the middleware takes a single argument that is destructured to get at the `response`.
 
-The call signature is `(root="/")`. The `root` should start with a `/` and is relative to the current working directory of the NodeJS process.
+2) There is no required test condition for the middleware, although the first callback can be used as a test if desired.
 
-### URLContentType
+3) There is no `next` function.
 
-`URLContentType` is a function factory that returns a handler that sets the `content-type` header of the response object to a content type based on the extension of the requested resource. There are a number of built-ins as shown below. Additonal extensions can be provided via a map argument to the factory. The map should take the form `{".<extension>":"<content type>"[,...]}`. If the map argument is provided, it takes precedence for conflicting extension keys and will over-ride the built-ins.
+You can see the section Design Decisions for detailed rationale. Here we will just explain what is going on.
 
-The call signature is `(moreTypes={})`.
 
-The built-ins are:
+`app.use` takes an arbitrary number of arguments the same as it does with `Express`. If the first argument is a `string`, it is treated as a path filter just like `Express`, otherwise all arguments are callback functions that take the form:
 
-```
-".gzip": "application/gzip",
-".gif": "image/gif",
-".htm": "text/html",
-".html": "text/html",
-".ico": "image/x-icon",
-".jpg": "image/jpeg",
-".jpeg": "image/jpeg",
-".js": "application/javascript",
-".md": "text/markdown",
-".mp4": "video/mp4",
-".mp4v": "video/mp4",
-".mpg4": "video/mp4",
-".mpg": "video/mpeg",
-".mpeg": "video/mpeg",
-".pdf": "applicaion/pdf",
-".png": "image/png",
-".txt": "text/plain",
-".wsdl": "application/wsdl+xml",
-".xml": "application/xml",
-".xsl": "application/xml"
+```javascript
+value => {
+	// destructuring assignment
+	
+	// processing
+	
+	// optional return value
+}
 ```
 
-### virtual
+You can also name your functions:
 
-`virtual` is a function factory that returns a handler configured to map a URI prefix to a static directory. Dexterous uses this interally to map the root URI `/dextrous` to either the root directory or the `/node_modules/dexterous` directory.
-
-The call signature is `(alias,root)`. Both arguments are strings and should start with `/`.
-
-### watch
-
-`watch` is a function factory that given a server instance and directory will return a handler to watch the directory tree and notify connected browser clients to reload themselves when any resources in the directory tree they reference change. Updates to files outside the directory tree but referenced by the client will not cause reloads. Make sure to watch a directory sufficiently high in the tree. `watch` can only be called once, subsequent calls are no-ops.
-
-Watch should be placed after a `DefaultFile` handler on the server. 
-
-The call signtaure is `watch(server,directory="/")`. The `directory` argument should start with a `/`, e.g.
-
-```
-server.use(require("dexterous/handlers/watch")(server,"/examples/Watch")); // should always go after DefaultFile handler
+```javascript
+function sayHellow(value) {
+	// destructuring assignment
+	
+	// processing
+	
+	// optional return value
+}
 ```
 
-The clients must be regular browser clients, not web workers, and must use a `JavaScriptRunner` that exposes the document object, e.g.:
-
-```
-const client = new Dexterous.Client();
-client.use(JavaScriptRunner({document}));
-client.listen(3000,(window.location.hostname.length>0 ? window.location.hostname : "127.0.0.1"));
-```
-
-See `examples/Watch` and the source for `/exampleServer.js`.
+This is useful if you ever need to debug your app with tracing. `Dexterous` will print these names to a log stream as it runs.
 
 
-# Advanced Use
+`Dexterous` middleware are effectively pipes using an enhanced version of the `Iterable` return value protocol. The pipe steps either return `undefined` or an object with one or both of two properties `value` and `done`:
 
-## Web Workers
-
-Dexterous supports the creation of WebWorker and SharedWorker(Chrome Only) clients:
-
-```
-const client = new Dexterous.WorkerClient();
-client.listen(3000,"127.0.0.1",<path to worker code>)
+```javascript
+{
+	value: boolean|number|string|object,
+	done: boolean
+}
 ```
 
-```
-const client = new Dexterous.SharedWorkerClient();
-client.listen(3000,"127.0.0.1",<path to worker code>)
+If `undefined` is returned, it is assumed all processing is complete. All other middleware is skipped.
+
+If `{value:<some value>}` is returned, that value is used as input to the next middleware function.
+
+If `{done:true}` is returned, the rest of a middleware is skipped and all processing is considered complete. All other middleware is skipped.
+
+If `{value:<some value>, done:true}` is returned the rest of a middleware is skipped and the next middleware is processed using the provided value as input. Returning this value from the first middleware callback is effectively the same as implementing a failed test condition.
+
+
+We can enhance our initial server to only process `GET` requests:
+
+
+```javascript
+const app = new DexterousHttpServer();
+app.use(
+	function checkMethod(value) {
+		const {request} = value;
+		if(request.method==="GET") {
+			return {value}; // pass value to next step
+		}
+		return {done:true,value:true}; // we are done with this middleware
+	},
+	function sayHello(value) {
+		const {response} = value;
+		response.end("Hello");
+		return; // we are done with processing
+	}
+)
 ```
 
-The worker code file will generally take the form:
+`DexterousHttpServer` has a built in `404 Not Found` handler that will respond to anything that is not a `GET` above.
+
+What if we want to respond to two different routes, `/hello` and `/goodbye`? `Dexterous` can handle that in a manner similar to `Express`:
+
+```javascript
+const app = new DexterousHttpServer();
+app.use(
+	function checkPath(value) {
+		const {request} = value;
+		if(request.location.pathname==="/hello") {
+			return {value}; // pass value to next step
+		}
+		return {done:true,value}; // we are done with this middleware
+	},
+	function sayHello(value) {
+		const {response} = value;
+		response.end("Hello");
+		return; // we are done with processing
+	}
+);
+app.route("/goodbye").use(
+	function sayGoodbye(value) {
+			const {response} = value;
+			response.end("Goodbye");
+			return; // we are done with processing
+		}
+	);
+```
+
+
+Things to note:
+
+1) We used two different approaches above, just as you could in Express.
+
+2) We referenced a `request.location` rather than `request.url`. See Design Decisions for more detail.
+
+We leave it as an exercise for you to add a `GET` filter to the above. See the source of `examples/HttpServer` for the solution.
+
+# Worker and ServiceWorker Servers
+
+Worker servers can be created with `Dexterous`, `DexterousHttpServer`, or `DexterousExpress`. The code will be identical to a regular server, except that the first argument to `listen` with be the special worker variable `self` rather than a port number and `options` should have the following shapes:
+
+## Workers and Shared Workers
+
+```javascript
+{
+	events: ["message"]
+}
+```
+
+## ServiceWorkers
+
+
+```javascript
+{
+	events: ["fetch"]
+}
+```
+
+For example:
+
+const Dexterous = require("dist/dexterous"),
+	dx = new Dexterous({trace:1,log:console});
+dx.route(
+  function matchPath(value) {
+    const {request} = value;
+    if(value.app.pathMatch("/hello",request.location.pathname)) {
+      return {value};
+    }
+    return {done:true,value};
+  }).use(
+    value => {  
+      value.response = new Response("at your service",{status:200,statusText:"ok"});
+	    }
+	  );
+dx.use(
+		function relay(value) {
+			const {request} = value;
+			value.response = fetch(request.location.href);
+		}
+);
+dx.listen(self,{events:["fetch"]});
+
+## Building and Using A Worker
+
+The easiest way to finalize your a worker for deployment is to use `webpack`:
+
 
 ```
-importScripts("/dexterous/dexterous.js",
-		"/dexterous/browser/server.js",
-		[<handler file>,...]);
-const server = new Dexterous.Server();
-server.use(<handler>);
-server.use(function *(request,response,next) => { ... yield next ... });
-// more use statements
-server.listen(this);
+webpack <appPath> <destinationFile>
 ```
 
-See the `examples` directory.
+You then load the client using the `destinationFile` as follows:
+
+```html
+<html>
+<body>
+</body>
+<script src="dexterous-worker.js"></script>
+<script>
+const app = new DexterousWorker("<destinationFile>");
+app.listen();
+</script>
+</html>
+```
+
+or
+
+```html
+<html>
+<body>
+</body>
+<script src="dexterous-service-worker.js"></script>
+<script>
+const app = new DexterousServiceWorker("<destinationFile>");
+app.listen();
+</script>
+</html>
+```
+
+Note: For routing to work properly, `destinationFile`, should be just that, a file in your root directory not a path to a file in a subdirectory.
+
+
+## Deploying a ServiceWorker to Cloudflare
+
+
+If you are using your `ServiceWorker` in the Cloudflare CDN, you will need to deploy it using something like `curl`, e.g.
+
+```
+curl -X PUT "https://api.cloudflare.com/client/v4/zones/:zone_id/workers/script" -H
+"X-Auth-Email:YOUR_CLOUDFLARE_EMAIL" -H "X-Auth-Key:ACCOUNT_AUTH_KEY" -H
+"Content-Type:application/javascript" --data-binary "@PATH_TO_YOUR_WORKER_SCRIPT"
+```
 
 # Debugging
 
-If your Dexteorus server does not seem to be responding but is up, there is probably a handler which is failing to return 'next' when it needs to after discovering it does not apply to a request that has been routed to it.
+Naturally, you can use normal JavaScript debugging capability with `Dexterous` apps. They will run un-transpiled in the most recent versions on Chrome, Firefox, Edge, and Node.
+
+`Dexterous` also has a start-up option `trace`. 
+
+```
+new Dexterous({trace:true})
+```
+
+If trace is `truthy` each step will be logged:
+
+```javascript
+[<middleware index>,<callback index>],<callback name>,<most recent return value>
+```
+
+Indexes are zero based. Each time a middleware is added to an app it gets an index one more than the last. This includes incrementing indexes associated with built-in routes. For example, `Dexterous` itself has one built in route so the first route you add will have an index of 1. `DexterousHttpServer` also has a built-in route and inherits from `Dexterous`, so if you add your own its index will be 2. `DexterousExpress` has two built-ins and inherits from `DexterousHttpServer`, so if you add a route it will have an index of 5.
+
+The location of logging can be changed with the start-up option `log`, which defaults to `console`.
 
 # API
 
-To be written
+## Dexterous - dexterous.js
+
+## DexterousHttpServer extends Dexterous - dexterous-http-server.js
+
+## DexterousExpress extends DexterousHttpServer - dexterous-express.js
+
+## DexterousServiceWorker - dexterous-service-worker.js
+
+# Design Decisions
+
+## Use Standards Based Idioms
+
+Whenever possible, use design idioms that reflect the approaches used in ECMAScript standards.
+
+## Minimize dependencies
+
+Enough said.
+
+## Simple Install 
+
+Installation processes that involve building by definition add dependencies and complexities, so avoid post istall build requirements.
+
+## No Transpilation
+
+Since most developers run a transpiling build process and target enviorment transpilation needs vary, the code is not provided in transpiled form. In some chases this means an archaic coding style may be used. For example, at the time of v1.0.1a deployment, the most recent Node version does not support ECMAScrimpt `import` and `export`; hence, the older `require` syntax is used.
+
+## Single Value Middleware Functions With Destructuring
+
+By having middleware functions take a single argument, a high level of flexibility is maintained with minimal code overhead.
+
+## No Middleware Gateway Tests
+
+`Dexterous` is based on a pipeline metaphor in which each step of middleware can be either a test or a transformation; hence, no leading test only function is required as a gateway filter. However, for convenience a `string` can be passed as a path. Internally, `Dexterous` converts these to functions.
+
+## No `next` Function
+
+Not using a `next` function like `Express` allowed the implementation of some very simple internals while also following the standards based `Iterable` return value metaphor.
+
+## `request.location` vs `request.url`
+
+This is a standards based idiom. When `Express` was launched, the ECMA standards around the `Location` object and `URL` class did not exist. Also the use of `url` as a property is not standardized across JavaScript objects. Sometimes it is a used for full URLs and at other times, e.g. the Node `Request` object, it is just a portion of a full URL. The property `url` is still present when using `DexterousExpress`, but its use should be avoided in new code.
 
 # Updates (reverse chronological order)
+
+2018-06-04 v1.0.1a - Complete re-write to simplify.
 
 2017-01-29 v0.2.7 - Added Content-length to headers via handlers.
 
