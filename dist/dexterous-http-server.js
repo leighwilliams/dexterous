@@ -63,9 +63,30 @@
 			}
 		}
 	}
+	const mimeTypes = {
+   	 "css": "text/css",
+  	 "gzip": "application/gzip",
+  	 "gif": "image/gif",
+  	 "htm": "text/html",
+  	 "html": "text/html",
+  	 "ico": "image/x-icon",
+  	 "jpg": "image/jpeg",
+  	 "jpeg": "image/jpeg",
+  	 "js": "application/javascript",
+  	 "json": "application/json",
+  	 "mp4": "video/mp4",
+  	 "mpg": "video/mpeg",
+  	 "mpeg": "video/mpeg",
+  	 "pdf": "applicaion/pdf",
+  	 "png": "image/png",
+  	 "txt": "text/plain",
+  	 "wsdl": "application/wsdl+xml",
+  	 "xml": "application/xml",
+  	 "xsl": "application/xml"
+	}
 	class DexterousHttpServer extends Dexterous {
 		constructor(options) {
-			super(options);
+			super(Object.assign({},{mimeTypes},options));
 			super.use(
 				function getLocation(value) {
 					const {request} = value;

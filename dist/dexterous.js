@@ -1,31 +1,9 @@
 (function() {
 	class Dexterous {
 		constructor(options) {
-			const mimeTypes = {
-			   	 "css": "text/css",
-			  	 "gzip": "application/gzip",
-			  	 "gif": "image/gif",
-			  	 "htm": "text/html",
-			  	 "html": "text/html",
-			  	 "ico": "image/x-icon",
-			  	 "jpg": "image/jpeg",
-			  	 "jpeg": "image/jpeg",
-			  	 "js": "application/javascript",
-			  	 "json": "application/json",
-			  	 "mp4": "video/mp4",
-			  	 "mpg": "video/mpeg",
-			  	 "mpeg": "video/mpeg",
-			  	 "pdf": "applicaion/pdf",
-			  	 "png": "image/png",
-			  	 "txt": "text/plain",
-			  	 "wsdl": "application/wsdl+xml",
-			  	 "xml": "application/xml",
-			  	 "xsl": "application/xml"
-				};
 			this._options = Object.assign({},options);
 			this._options.log || (this._options.log=console);
 			this._options.mimeTypes || (this._options.mimeTypes={});
-			Object.assign(this._options.mimeTypes,mimeTypes);
 			this._middleware = [];
 			Dexterous.prototype.use.call(this, // use may be overridden lower in the heirarchy
 					function normalizeLocations(value) {
@@ -52,9 +30,7 @@
 			let node = this._options,
 				part;
 			while((part=parts.shift())) {
-				if(!node[part] || typeof(node[part])!=="object") {
-					return;
-				}
+				if(!node[part] || typeof(node[part])!=="object") return;
 			}
 			return node[key];
 		}
@@ -92,9 +68,7 @@
 	        } catch(e) {
 	          result = e;
 	        }
-	        if(this._options.trace && this._options.log) {
-	          this._options.log.log([i,j],step.name,result)
-	        }
+	        if(this._options.trace && this._options.log) this._options.log.log([i,j],step.name||"anonymous",result)
 	        if(result) {
 	        	next = result.value!==undefined ? result.value : result;
 	        	value = result.value;
@@ -107,13 +81,9 @@
 			}
 			if(next) {
 				next = this.final(next);
-				if(next && next.error) {
-					 this._options.log.log(next.error)
-				}
+				if(next && next.error) this._options.log.log(next.error)
 			}
-			if(typeof(postMessage)!=="undefined") {
-				postMessage({id,message:next})
-			}
+			if(typeof(postMessage)!=="undefined") postMessage({id,message:next})
 			if(!next || !next.error) {
 				if(promise) callback(next);
 				else callback(null,next)
@@ -125,18 +95,13 @@
 	  listen(scope,{events}) {
 	  	async function respond(scope,event) {
 			  const response = await scope.handle(event);
-			  if(response!==undefined) {
-			    return response;
-			  }
+			  if(response!==undefined) return response;
 			  return new Response("Not Found",{status:404,statusText:"Not Found"});
 			}
 	  	events.forEach(eventName => {
 	  		scope.addEventListener(eventName,event => { 
-	  			if(event.respondWith) {
-	  				event.respondWith(respond(this,event));
-	  			} else {
-	  				respond(this,event);
-	  			}
+	  			if(event.respondWith) event.respondWith(respond(this,event));
+	  			else respond(this,event);
 				})
 	  	});
 	  }
@@ -144,9 +109,7 @@
 	  	return this._options.mimeTypes;
 	  }
 		pathMatch(path,url) {
-			if(url && path && typeof(path)==="object" && path instanceof RegExp) {
-				return path.test(url);
-			}
+			if(url && path && typeof(path)==="object" && path instanceof RegExp) return path.test(url);
 			return url && url.indexOf(path)===0;
 		}
 	  route(test) {
@@ -159,7 +122,7 @@
 	  }
 		set(key,value) {
 			const parts = key.split(".");
-			key = parts.pop().trim();
+				key = parts.pop().trim();
 			let node = this._options,
 				part;
 			while((part=parts.shift())) {
@@ -173,9 +136,7 @@
 	  			path = pipeline[0];
 	  		pipeline[0] = function pathMatch(value) {
 	  			const {request,location} = value;
-	  			if(me.pathMatch(path,request ? request.location.pathname : location.pathname)) {
-	  				return {value};
-	  			}
+	  			if(me.pathMatch(path,request ? request.location.pathname : location.pathname)) return {value};
 	  			return {done:true,value};
 	  		}
 	  	}
@@ -183,10 +144,6 @@
 			return this;
 		}
 	}
-	if(typeof(module)!=="undefined") {
-		module.exports = Dexterous;
-	}
-	if(typeof(window)!=="undefined") {
-		window.Dexterous = Dexterous;
-	}
+	if(typeof(module)!=="undefined") module.exports = Dexterous;
+	if(typeof(window)!=="undefined") window.Dexterous = Dexterous;
 }).call(this);

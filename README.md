@@ -1,4 +1,4 @@
-# dexterous v1.0.2a
+# dexterous v1.0.3a
 
 `Dexterous` is a light weight isomorphic JavaScript middleware server for browser pages, Workers, ServiceWorkers, NodeJS and Cloudflare.
 
@@ -202,7 +202,7 @@ The easiest way to finalize your a worker for deployment is to use `webpack`:
 webpack <appPath> <destinationFile>
 ```
 
-You then load the client using the `destinationFile` as follows:
+Assuming you have moved a copy of `dexterous-worker` or `dexterous-services-worker` to your app directory, you then load the client using the `destinationFile` as follows:
 
 ```html
 <html>
@@ -264,6 +264,36 @@ Indexes are zero based. Each time a middleware is added to an app it gets an ind
 
 The location of logging can be changed with the start-up option `log`, which defaults to `console`.
 
+# Handling Errors
+
+With Dexterous, errors are just like any other return value and you can write routes to handle them. The route below, if made the last one in your app could handle any number of errors:
+
+```
+dx.route(value => 
+  (value && typeof(value)==="object" && value instanceof Error 
+    ? {value} 
+    : {done:true, value})
+  ).use(error => ...)
+```
+
+Alternatively, you could adopt a convention that the last step in any handler is for addressing errors:
+
+
+```
+dx.use(
+ ...,
+ ...,
+ value => {
+ 	if(value && typeof(value)==="object" && value instanceof Error) {
+ 		... <do something> ...
+ 		return {value:<corrected value>};
+ 	}
+ 	return {value}
+ }
+)
+```
+
+
 # API
 
 ## Dexterous - dexterous.js
@@ -310,7 +340,9 @@ This is a standards based idiom. When `Express` was launched, the ECMA standards
 
 # Updates (reverse chronological order)
 
-2018-06-04 v1.0.2a - Simplify middleware return value protocol.
+2018-06-07 v1.0.3a - Improved logging. Moved default mime types down to DexterousHtppServer.
+
+2018-06-06 v1.0.2a - Simplify middleware return value protocol.
 
 2018-06-04 v1.0.1a - Complete re-write to simplify.
 
