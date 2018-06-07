@@ -2,7 +2,7 @@
 	class DexterousWorker {
 		constructor(path) {
 			this.path = path;
-			this.callbacks = new Map();
+			this.resolvers = new Map();
 		}
 		close() {
 			!this.server || this.server.close();
@@ -11,19 +11,25 @@
 			path || (path = this.path);
 			this.server = new Worker(path);
 			this.server.onmessage = ({data:{id,message}}) => {
-				const callback = this.callbacks.get(id);
-				if(callback) {
-					this.callbacks.delete(id);
-					callback(message);
+				const resolver = this.resolvers.get(id);
+				if(resolver) {
+					this.resolvers.delete(id);
+					resolver(message);
 				}
 			};
 			return this.server;
 		}
 		handle(message,callback) {
 			if(!this.server) this.listen();
-			const id = this.callbacks.size;
-			this.callbacks.set(id,callback);
+			let resolver;
+			const id = this.resolvers.size,
+				promise = new Promise(resolve => resolver = resolve);
+			if(callback) {
+				promise.then(result => callback(result));
+			}
+			this.resolvers.set(id,resolver);
 			this.server.postMessage({id,message});
+			return promise;
 		}
 		
 	}

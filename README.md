@@ -1,4 +1,4 @@
-# dexterous v1.0.1a
+# dexterous v1.0.2a
 
 `Dexterous` is a light weight isomorphic JavaScript middleware server for browser pages, Workers, ServiceWorkers, NodeJS and Cloudflare.
 
@@ -87,13 +87,13 @@ This is useful if you ever need to debug your app with tracing. `Dexterous` will
 }
 ```
 
-If `undefined` is returned, it is assumed all processing is complete. All other middleware is skipped.
-
 If `{value:<some value>}` is returned, that value is used as input to the next middleware function.
 
-If `{done:true}` is returned, the rest of a middleware is skipped and all processing is considered complete. All other middleware is skipped.
+If `{done:true}` is returned, the rest of the current middleware is skipped and all processing is considered complete. All other middleware is skipped because `value` is undefined.
 
-If `{value:<some value>, done:true}` is returned the rest of a middleware is skipped and the next middleware is processed using the provided value as input. Returning this value from the first middleware callback is effectively the same as implementing a failed test condition.
+If `{value:<some value>, done:true}` is returned, the rest of a middleware is skipped and the next middleware is processed using the provided value as input. If the function is the last step in a middleware, `done:true` is assumed.
+
+If `undefined` or a value that does not contain the properties `done` or `value` is returned, it is assumed all processing is complete. All other middleware is skipped.
 
 
 We can enhance our initial server to only process `GET` requests:
@@ -180,23 +180,16 @@ For example:
 
 const Dexterous = require("dist/dexterous"),
 	dx = new Dexterous({trace:1,log:console});
-dx.route(
-  function matchPath(value) {
-    const {request} = value;
-    if(value.app.pathMatch("/hello",request.location.pathname)) {
-      return {value};
-    }
-    return {done:true,value};
-  }).use(
+dx.route("/hello").use(
     value => {  
       value.response = new Response("at your service",{status:200,statusText:"ok"});
-	    }
-	  );
+	}
+);
 dx.use(
-		function relay(value) {
-			const {request} = value;
-			value.response = fetch(request.location.href);
-		}
+	value => {
+		const {request} = value;
+		value.response = fetch(request.location.href);
+	}
 );
 dx.listen(self,{events:["fetch"]});
 
@@ -316,6 +309,8 @@ Not using a `next` function like `Express` allowed the implementation of some ve
 This is a standards based idiom. When `Express` was launched, the ECMA standards around the `Location` object and `URL` class did not exist. Also the use of `url` as a property is not standardized across JavaScript objects. Sometimes it is a used for full URLs and at other times, e.g. the Node `Request` object, it is just a portion of a full URL. The property `url` is still present when using `DexterousExpress`, but its use should be avoided in new code.
 
 # Updates (reverse chronological order)
+
+2018-06-04 v1.0.2a - Simplify middleware return value protocol.
 
 2018-06-04 v1.0.1a - Complete re-write to simplify.
 

@@ -1,14 +1,14 @@
 {
   "name": "dexterous",
-  "version": "v1.0.1a",
+  "version": "v1.0.2a",
   "description": "A light weight isomorphic JavaScript middleware server for the Browser, Web Workers, Service Workers, NodeJS and Cloudflare.",
   "engines": {
     "node": "7.3.0"
   },
   "license": "MIT",
   "scripts": {
-  	"BrowserServer": "node examplesapp.js BrowserServer",
-  	"HttpServer": "node ./examples/HttpServer/app.js",
+    "BrowserServer": "node examplesapp.js BrowserServer",
+    "HttpServer": "node ./examples/HttpServer/app.js",
     "ServiceWorker": "node examplesapp.js ServiceWorker",
     "Worker": "node examplesapp.js Worker",
     "prepare": "cp ./src/* ./dist"
@@ -27,8 +27,6 @@
   },
   "homepage": "https://github.com/anywhichway/dexterous#readme",
   "devDependencies": {
-    "browserify": "^13.3.0",
-    "express-markdown": "0.0.6",
     "curl": "^0.1.4",
     "webpack": "^4.10.2"
   },

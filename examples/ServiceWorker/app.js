@@ -67,25 +67,13 @@
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Dexterous = __webpack_require__(1);
-const dx = new Dexterous({trace:1,log:console});
-dx.route(
-  function matchPath(value) {
-    const {request} = value;
-    if(value.app.pathMatch("/hello",request.location.pathname)) {
-      return {value};
-    }
-    return {done:true,value};
-  }).use(
-    value => {  
-      value.response = new Response("at your service",{status:200,statusText:"ok"});
-	    }
-	  );
+const Dexterous = __webpack_require__(1),
+	dx = new Dexterous({trace:1,log:console});
+dx.route("/hello").use(
+  value => new Response("at your service",{status:200,statusText:"ok"})
+  );
 dx.use(
-		function relay(value) {
-			const {request} = value;
-			value.response = fetch(request.location.href);
-		}
+		({request:{location:href}}) => fetch(href)
 );
 dx.listen(self,{events:["fetch"]});
 
@@ -127,7 +115,7 @@ dx.listen(self,{events:["fetch"]});
 			Object.assign(this._options.mimeTypes,mimeTypes);
 			this._middleware = [];
 			Dexterous.prototype.use.call(this, // use may be overridden lower in the heirarchy
-					value => {
+					function normalizeLocations(value) {
 						for(const key in value) {
 							const item = value[key];
 	            if(item && item.url) {
@@ -142,6 +130,9 @@ dx.listen(self,{events:["fetch"]});
 					}
 			);
 		}
+		close() {
+			!this.server || this.server.close();
+		}
 		get(key) {
 			const parts = key.split(".");
 			key = parts.pop().trim();
@@ -154,15 +145,32 @@ dx.listen(self,{events:["fetch"]});
 			}
 			return node[key];
 		}
-	  async handle(value) {
+	  final(value) {
+	  	return value;
+	  }
+	  async handle(value,callback) {
 	  	let next,
 	  		callbacks = 0,
-	  		i = 0;
-			const app = value.app = this;
+	  		i = 0,
+	  		id,
+	  		rejector,
+	  		promise;
+	  	if(!callback) {
+	  		promise = new Promise((resolve,reject) => {
+	  			callback = resolve;
+	  			rejector = reject;
+	  		})
+	  	}
+	  	if(typeof(MessageEvent)!=="undefined" && value instanceof MessageEvent) {
+	  		id = value.data.id;
+	  		value = value.data.message;
+	  	}
+			const app = this;
+			Object.defineProperty(value,"app",{enumerable:false,configurable:true,writable:true,value:app});
 			for(i=0;i<this._middleware.length && value!==undefined;i++) {
 	      const handler = this._middleware[i];
 	      next = value;
-				for(let j=0;j<handler.length;j++) {
+				for(let j=0;j<handler.length && value!==undefined;j++) {
 					callbacks++;
 	        const step = handler[j];
 				  let result;
@@ -174,14 +182,13 @@ dx.listen(self,{events:["fetch"]});
 	        if(this._options.trace && this._options.log) {
 	          this._options.log.log([i,j],step.name,result)
 	        }
-	        if(!result || result.value===undefined) {
-	        	callbacks--;
-	        	value = undefined;
+	        if(result) {
+	        	next = result.value!==undefined ? result.value : result;
+	        	value = result.value;
+	        	if(result.done || result.value==undefined) break;
 	        } else {
-	        	next = result.value;
-	        }
-	        if(!result || result.done || result.value===undefined) {
-	        	break; //return {value:next,middleware:i,callbacks};
+	        	next = result;
+	        	value = undefined;
 	        }
 				}
 			}
@@ -191,33 +198,43 @@ dx.listen(self,{events:["fetch"]});
 					 this._options.log.log(next.error)
 				}
 			}
-			return {value:next,middleware:i,callbacks};
+			if(typeof(postMessage)!=="undefined") {
+				postMessage({id,message:next})
+			}
+			if(!next || !next.error) {
+				if(promise) callback(next);
+				else callback(null,next)
+			} else {
+				reject(next.error,next);
+			}
+			return promise;
 		}
-	  final(value) {
-	  	return value;
-	  }
-	  get mimeTypes() {
-	  	return this._options.mimeTypes;
-	  }
 	  listen(scope,{events}) {
 	  	async function respond(scope,event) {
-			  const result = await scope.handle(event);
-			  if(result && result.value && result.value.response) {
-			    return result.value.response;
+			  const response = await scope.handle(event);
+			  if(response!==undefined) {
+			    return response;
 			  }
 			  return new Response("Not Found",{status:404,statusText:"Not Found"});
 			}
 	  	events.forEach(eventName => {
 	  		scope.addEventListener(eventName,event => { 
-	  			event.respondWith(respond(this,event));
+	  			if(event.respondWith) {
+	  				event.respondWith(respond(this,event));
+	  			} else {
+	  				respond(this,event);
+	  			}
 				})
 	  	});
 	  }
+	  get mimeTypes() {
+	  	return this._options.mimeTypes;
+	  }
 		pathMatch(path,url) {
-			if(path && typeof(path)==="object" && path instanceof RegExp) {
+			if(url && path && typeof(path)==="object" && path instanceof RegExp) {
 				return path.test(url);
 			}
-			return url.indexOf(path)===0;
+			return url && url.indexOf(path)===0;
 		}
 	  route(test) {
 	   const me = this,
@@ -238,6 +255,17 @@ dx.listen(self,{events:["fetch"]});
 			node[key] = value;
 		}
 	  use(...pipeline) {
+	  	if(typeof(pipeline[0])==="string") {
+	  		const me = this,
+	  			path = pipeline[0];
+	  		pipeline[0] = function pathMatch(value) {
+	  			const {request,location} = value;
+	  			if(me.pathMatch(path,request ? request.location.pathname : location.pathname)) {
+	  				return {value};
+	  			}
+	  			return {done:true,value};
+	  		}
+	  	}
 			this._middleware.push(pipeline);
 			return this;
 		}

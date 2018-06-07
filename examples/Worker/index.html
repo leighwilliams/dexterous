@@ -8,9 +8,10 @@
 <script src="dexterous-worker.js"></script>
 <script src="app.js"></script>
 <script>
-function click() {
-	const worker = new DexterousWorker("app.js");
-	worker.handle({text:"hello"},value => alert(value.text));
+async function click() {
+	const worker = new DexterousWorker("app.js"),
+		value = await worker.handle({text:"hello"});
+	alert(value.text);
 }
 </script>
 </html>

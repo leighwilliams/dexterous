@@ -110,20 +110,6 @@
 		static(root,options) {
 			super.use(staticRouter(root,options));
 		}
-		use(...pipeline) {
-	  	if(typeof(pipeline[0])==="string") {
-	  		const me = this,
-	  			path = pipeline[0];
-	  		pipeline[0] = function pathMatch(value) {
-	  			const {request} = value;
-	  			if(me.pathMatch(path,request.location.pathname)) {
-	  				return {value};
-	  			}
-	  			return {done:true,value};
-	  		}
-	  	}
-			return super.use(...pipeline);
-		}
 	}
 	
 	if(typeof(module)!=="undefined") module.exports = DexterousHttpServer;
