@@ -1,4 +1,4 @@
-# dexterous v1.0.4a
+# dexterous v1.0.5a
 
 `Dexterous` is a light weight isomorphic JavaScript middleware server for browser pages, Workers, ServiceWorkers, NodeJS and Cloudflare.
 
@@ -341,6 +341,8 @@ Not using a `next` function like `Express` allowed the implementation of some ve
 This is a standards based idiom. When `Express` was launched, the ECMA standards around the `Location` object and `URL` class did not exist. Also the use of `url` as a property is not standardized across JavaScript objects. Sometimes it is a used for full URLs and at other times, e.g. the Node `Request` object, it is just a portion of a full URL. The property `url` is still present when using `DexterousExpress`, but its use should be avoided in new code.
 
 # Updates (reverse chronological order)
+
+2018-12-03 v1.0.5a - Changed engine to >=10.0.0.
 
 2018-06-07 v1.0.4a - Remove un-necessary files.
 
