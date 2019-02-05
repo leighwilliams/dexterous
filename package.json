@@ -32,6 +32,6 @@
   },
   "dependencies": {
     "path-to-regexp": "^2.2.1",
-    "wsfetch": "0.0.2"
+    "wsfetch": "0.0.3"
   }
 }
